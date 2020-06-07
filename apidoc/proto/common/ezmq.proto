@@ -1,0 +1,15 @@
+
+syntax = "proto3";
+package common;
+import "google.protobuf/descriptor.proto";
+option go_package = "git.ezbuy.me/ezbuy/base/dist/proto/common";
+
+extend google.protobuf.MethodOptions {
+    bool isEzmqIsolated = 72295734;
+    bool useBaseLib = 72295738;
+}
+
+extend google.protobuf.ServiceOptions {
+    bool serviceUseBaseLibMq = 72295739;
+}
+

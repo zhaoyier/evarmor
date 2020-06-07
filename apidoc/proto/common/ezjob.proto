@@ -1,0 +1,15 @@
+syntax="proto3";
+package common;
+
+import "google.protobuf/descriptor.proto";
+option go_package = "git.ezbuy.me/ezbuy/base/dist/proto/common";
+
+extend google.protobuf.MethodOptions {
+  string ezjob_desc       = 72295741;
+  string ezjob_exec_time  = 72295742;
+  string ezjob_timeout    = 72295743;
+  string ezjob_exec_after = 72295744;
+  bool   ezjob_is_dedup   = 72295745;
+  string ezjob_run_at     = 72295746;
+  int32  ezjob_type       = 72295747;
+}

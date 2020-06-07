@@ -1,0 +1,9 @@
+gen_ezorm: service/gateway/internal/model/gen_*.go
+clean_ezorm: clean_service/gateway/internal/model.yaml
+service/gateway/internal/model/gen_*.go: service/gateway/internal/model.yaml $(shell which ezorm)
+	@mkdir -p service/gateway/internal/model
+	@rm -f service/gateway/internal/model/gen_*.go
+	@ezorm gen -o service/gateway/internal/model --goPackage model -p gateway -i service/gateway/internal/model.yaml
+clean_service/gateway/internal/model.yaml:
+	rm -f service/gateway/internal/model/gen_*.go
+

@@ -1,0 +1,6 @@
+Counter:
+  db: mongo
+  fields:
+    - Key: string
+      flags: [unique]
+    - Val: int32

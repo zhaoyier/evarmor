@@ -1,0 +1,35 @@
+syntax = "proto3";
+package evarmor;
+
+message Result {
+  int32 errCode = 1;
+  string msg = 2;
+}
+
+message NameMapping {
+	string code = 1;
+	string name = 2;
+}
+
+enum ExchangeName {
+	ExchangeNameUnknown = 0;
+	ExchangeNameZhengZhou = 1;
+	ExchangeNameDalian = 2;
+	ExchangeNameShangHai = 3;
+	ExchangeNameBillboard = 4;
+	ExchangeNameHint = 5;
+}
+
+enum FetchStatus {
+	FetchStatusUnknown = 0;
+	FetchStatusWaiting = 1;
+	FetchStatusFinish = 2;
+}
+
+//报表方式
+enum ReportMethod {
+	ReportMethodUnknown = 0;
+	ReportMethodThree = 1;
+	ReportMethodWeek = 2;
+	ReportMethodMonth = 3;
+}

@@ -1,0 +1,14 @@
+syntax = "proto3";
+package common;
+option go_package = "git.ezbuy.me/ezbuy/base/dist/proto/common";
+
+enum DeliveryType {
+	Invalid = 0;
+	SelfCollection = 1;
+	NeighbourhoodStation = 2;
+	Subway = 3;
+	Home = 4;
+	EzCollection = 5;
+	TH711EzCollection = 6;
+	MYCollectco = 7;
+}

@@ -1,0 +1,18 @@
+syntax = "proto3";
+package common;
+import "google.protobuf/descriptor.proto";
+option go_package = "git.ezbuy.me/ezbuy/base/dist/proto/common";
+
+extend google.protobuf.MethodOptions {
+	int64 cacheTTL = 73295734;
+    RedisType type = 73295735;
+}
+
+enum RedisType {
+    String = 0;
+    List = 1;
+    Set = 2;
+    HSet = 3;
+    ZSet = 4;
+}
+

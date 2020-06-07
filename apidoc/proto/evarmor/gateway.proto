@@ -1,0 +1,13 @@
+syntax="proto3";
+package evarmor;
+
+enum ServiceType {
+  ServiceTypeUnknown = 0;
+  ServiceTypeGateway = 1;
+}
+
+enum ServiceLevel {
+  ServiceLevelUnknown = 0;
+  ServiceLevelClient = 1;
+}
+

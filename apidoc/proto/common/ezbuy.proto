@@ -1,0 +1,116 @@
+syntax = "proto3";
+package common;
+import "google.protobuf/descriptor.proto";
+import "common/time.proto";
+option go_package = "git.ezbuy.me/ezbuy/base/dist/proto/common";
+
+message WebapiOption {
+	// 该方法是否支持webapi
+	bool enable = 1;
+	// 是否禁止该方法在webapi中显示
+	bool disable = 4;
+	// 使用multipart上传文件
+	bool upload = 2;
+	// 使用二进制流而不是json
+	bool download = 3;
+	// 是否支持GET方法
+	bool get = 5;
+
+	// 是否支持交互
+	bool interactive = 6;
+}
+
+message AuthOption {
+	// 是否需要登陆
+	bool user = 1;
+	// 是否需要管理员权限
+	bool admin = 2;
+	// 允许访问的服务
+	repeated string allowService = 3;
+}
+
+message ServiceOption {
+	// 全局开启 webapi
+	bool webapi = 1;
+	// 是否允许外部访问
+	bool public = 2;
+	// 是否全部需要管理员访问
+	bool admin = 3;
+	// 接口层cache可以使用的内存上限, 例如： 100MB, 2GB
+	string cacheMemoryLimit = 4;
+	TxMsgOption txmsg = 5;
+    // 冻结缓存过期时间，等待第一次设置后自然消亡
+    bool cacheExpiredFreeze = 6;
+}
+
+message TxMsgOption {
+	repeated string subscribers = 1;
+	// mysql | mssql, default mysql
+	string DB = 2;
+	// 这个字段相同的，要按顺序发送，默认空
+	string serializableField = 3;
+}
+
+message ServiceOpDesc {
+	string name = 1;
+	ServiceOption option = 2;
+	repeated MethodOpDesc methods = 3;
+}
+
+message MethodOpDesc {
+	string name = 1;
+	WebapiOption webapi = 2;
+	AuthOption auth = 3;
+	Duration timeout = 4;
+	bool isClientStreaming = 5;
+	bool isServerStreaming = 6;
+	InterfaceCacheOpDesc cache = 7;
+	TxMsgOption txmsg = 8;
+}
+
+message InterfaceCacheOpDesc {
+	bool enableClientSideCache = 7; // 是否允许在 client 侧使用缓存
+	bool enableServerSideCache = 8; // 是否允许在 server 侧使用缓存
+	string cacheExpired = 9; // 缓存的过期时间, 目前只支持到秒这个精度；例如：30, 30s, 2m, 1h
+    bool enableCacheLangPrefix = 10; // 开启缓存区分语言
+    bool enableCacheCatalogPrefix = 11; // 开启缓存区分售卖地
+}
+
+extend google.protobuf.MethodOptions {
+	WebapiOption webapi = 72295728;
+	AuthOption auth = 72295729;
+	string timeout = 72295730;
+	InterfaceCacheOpDesc cache = 72295731;
+	// 是否群发调用所有实例
+	bool broadcast = 72295732;
+	TxMsgOption txmsg = 72295733;
+}
+
+extend google.protobuf.ServiceOptions {
+	ServiceOption service = 72295728;
+}
+
+message MessageOpDesc {
+
+}
+
+extend google.protobuf.MessageOptions {
+	bool omniempty = 72295729;
+}
+
+message StringValidator {
+	int32 minLen = 1;
+	int32 maxLen = 2;
+	repeated string in = 3;
+	string regex = 4;
+}
+
+extend google.protobuf.FieldOptions {
+	bool compact = 72295728;
+
+	StringValidator strValidator = 72295737;
+}
+
+extend google.protobuf.EnumValueOptions {
+  string label = 72295729;
+}
