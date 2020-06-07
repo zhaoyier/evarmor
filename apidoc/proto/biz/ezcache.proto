@@ -1,0 +1,79 @@
+syntax = "proto3";
+package biz;
+option go_package = "git.ezbuy.me/ezbuy/base/dist/proto/biz";
+import "common/any.proto";
+import "biz/region.proto";
+
+message EzcacheMsg {
+  repeated EzcacheItem items = 1;
+}
+
+message EzcacheItem {
+  int64 reqId = 1;
+  EzcacheOp op = 2;
+  string delegate = 9;
+  EzcacheKey key = 5;
+  common.Any arg1 = 3;
+  common.Any arg2 = 7;
+  EzcacheError error = 6;
+  string errorMsg = 8;
+}
+
+enum EzcacheError {
+  EzcacheErrorOK = 0;
+  EzcacheErrorUnknown = 1;
+  EzcacheErrorNotFound = 2;
+  EzcacheErrorInvalidDelegate = 3;
+  EzcacheErrorNotModified = 4;
+}
+
+enum EzcacheKeyType {
+  EzcacheKeyTypeInvalid = 0;
+  EzcacheKeyTypeAny = 1;
+  EzcacheKeyTypeI64 = 2;
+  EzcacheKeyTypeStr = 3;
+  EzcacheKeyTypeI32 = 4;
+  EzcacheKeyTypeBool = 5;
+}
+
+message EzcacheKey {
+  EzcacheKeyType type = 1;
+  common.Any any = 2;
+  int64 i64 = 3;
+  string str = 4;
+  int32 i32 = 5;
+  bool bool = 6;
+  biz.Region catalog = 7;
+}
+
+message EzcacheGetOpt {
+  string Etag = 1;
+  bool cacheOnly = 2;
+}
+
+enum EzcacheOp {
+  EzcacheOpInvalid = 0;
+
+  // 转发Get请求
+  EzcacheOpGet = 1;
+  EzcacheOpGetResp = 2;
+
+  // 转发删除请求
+  EzcacheOpRemove = 3;
+  EzcacheOpRemoveResp = 4;
+
+  // 转发更新请求
+  EzcacheOpUpdate = 5;
+  EzcacheOpUpdateResp = 6;
+  
+  // 通知更新结果
+  EzcacheOpUpdateNotify = 7;
+  EzcacheOpUpdateNotifyResp = 8;
+
+  // 删除通知
+  EzcacheOpRemoveNotify = 9;
+  EzcacheOpRemoveNotifyResp = 10;
+  
+  EzcacheOpError = 100;
+}
+

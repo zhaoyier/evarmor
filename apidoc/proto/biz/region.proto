@@ -1,0 +1,25 @@
+syntax = "proto3";
+package biz;
+option go_package = "git.ezbuy.me/ezbuy/base/dist/proto/biz";
+
+option swift_prefix = "GR";
+
+//包含来源地、销售地
+enum Region {
+  RegionInvalid = 0;
+  RegionCN = 1;               //中国
+  RegionTW = 2;               //台湾
+  RegionUS = 3;               //美国
+  RegionKR = 4;               //韩国
+  RegionJP = 5;               //日本
+
+  RegionSG = 100000000;       //新加坡
+  RegionMY = 200000000;       //马来
+  RegionTH = 300000000;       //泰国
+  RegionID = 400000000;       //印尼
+  RegionPK = 600000000;       //巴基斯坦
+  RegionTWC = 700000000;      //台湾
+  RegionAUE = 800000000;      //澳大利亚
+  RegionHK  = 900000000;      //中国香港
+  RegionTHE = 1000000000;     //新泰站
+}

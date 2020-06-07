@@ -1,0 +1,8 @@
+gen_proto: rpc/evarmor/*.pb.go
+clean_proto:
+	rm -f rpc/evarmor/*.pb.go
+rpc/evarmor/*.pb.go: apidoc/proto/evarmor/*.proto $(shell which protoc) $(shell which protoc-gen-go)
+	@mkdir -p rpc
+	@echo "gen proto"
+	@rm -f rpc/evarmor/*.pb.go
+	@protoc -I apidoc/proto apidoc/proto/evarmor/*.proto --go_out=dep_path=git.ezbuy.me/ezbuy/%[1]v/rpc/%[1]v,plugins=grpc:rpc

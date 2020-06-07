@@ -1,0 +1,19 @@
+syntax="proto3";
+package common;
+
+enum ServiceType {
+  ServiceTypeUnknown = 0;
+  ServiceTypeGateway = 1;
+  ServiceTypeResource = 2;
+  ServiceTypeUser = 3;
+  ServiceTypeChate = 4;
+  ServiceTypeFight = 5;
+}
+
+enum ServiceLevel {
+  ServiceLevelUnknown = 0;
+  ServiceLevelClient = 1;
+  ServiceLevelLogic = 2;
+  ServiceLevelLog = 3;
+  ServiceLevelDB = 4;
+}

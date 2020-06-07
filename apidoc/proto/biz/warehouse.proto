@@ -1,0 +1,28 @@
+syntax = "proto3";
+package biz;
+option go_package = "git.ezbuy.me/ezbuy/base/dist/proto/biz";
+
+// biz.Warehouse 不再继续维护
+// 这边的枚举值与实际不符
+// 业务相关请使用下面的IDWarehouse
+enum Warehouse {
+  WarehouseInvalid = 0;
+  WarehouseGuangzhou = 1;
+  WarehouseShanghai = 2;
+  WarehouseAmerican = 3;
+  WarehouseTaiwan = 4;
+  WarehouseSingapore = 5;
+  WarehouseMalaysia = 6;
+  WarehouseINCHEON = 7;
+  WarehouseJapan = 8;
+  WarehousePakistan = 9;
+}
+
+// IDWarehouse 业务相关的WareHouse ID枚举
+enum IDWarehouse {
+  IDWarehouseInvalid = 0;
+  IDWarehouseShanghai = 1;
+  IDWarehouseGuangzhou = 2;
+  IDWarehouseTaiwan = 3;
+  IDWarehouseAmerican = 4;
+}
