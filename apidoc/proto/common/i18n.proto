@@ -1,9 +1,0 @@
-syntax = "proto3";
-package common;
-option go_package = "git.ezbuy.me/ezbuy/base/dist/proto/common";
-
-message I18n {
-	string catalog = 1;
-	string lang = 2;
-	string client = 3;
-}

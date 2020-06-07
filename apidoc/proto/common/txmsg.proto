@@ -1,8 +1,0 @@
-syntax = "proto3";
-package common;
-option go_package = "git.ezbuy.me/ezbuy/base/dist/proto/common";
-
-message TxMsgMetaData {
-	int64 id = 1;
-	int64 createdAt = 2;
-}

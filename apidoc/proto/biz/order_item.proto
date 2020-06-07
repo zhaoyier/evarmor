@@ -1,9 +1,0 @@
-syntax = "proto3";
-package biz;
-
-option go_package = "git.ezbuy.me/ezbuy/base/dist/proto/biz";
-
-message OrderItem{
-    int64 orderID = 1;
-    int64 orderItemID = 2;
-}
