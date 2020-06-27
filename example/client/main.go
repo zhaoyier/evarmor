@@ -1,4 +1,4 @@
-package client
+package main
 
 import (
 	"bufio"
@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
 	"sync"
+
+	pb "git.ezbuy.me/ezbuy/evarmor/rpc/evarmor"
+	"github.com/golang/protobuf/proto"
 )
 
 type Msg struct {
@@ -20,7 +22,7 @@ type Resp struct {
 	Status int    `json:"status"`
 }
 
-func Client() {
+func main() {
 	flag.Parse()
 	conn, err := net.Dial("tcp", "localhost:13101")
 	if err != nil {
@@ -38,18 +40,35 @@ func Client() {
 
 func handleWrite(conn net.Conn, wg *sync.WaitGroup) {
 	defer wg.Done()
-	for i := 10; i > 0; i-- {
-		d := "hello" + strconv.Itoa(i)
-		msg := Msg{
-			Data: d,
-			Type: 1,
-		}
-		b, _ := json.Marshal(msg)
-		writer := bufio.NewWriter(conn)
-		writer.Write(b)
-		writer.Write([]byte("\n"))
-		writer.Flush()
+	req := &pb.HelloRequest{
+		Name: "zhao",
 	}
+
+	data, _ := proto.Marshal(req)
+
+	xm := &pb.XMessage{
+		Code: "SayHello",
+		Data: string(data),
+	}
+	data, _ = proto.Marshal(xm)
+	fmt.Printf("====>>101:%+v|%+v\n", string(data), xm.String())
+	writer := bufio.NewWriter(conn)
+	writer.Write(data)
+	// writer.Write([]byte("\n"))
+	writer.Flush()
+
+	// for i := 10; i > 0; i-- {
+	// 	d := "hello" + strconv.Itoa(i)
+	// 	msg := Msg{
+	// 		Data: d,
+	// 		Type: 1,
+	// 	}
+	// 	b, _ := json.Marshal(msg)
+	// 	writer := bufio.NewWriter(conn)
+	// 	writer.Write(b)
+	// 	writer.Write([]byte("\n"))
+	// 	writer.Flush()
+	// }
 	fmt.Println("write done")
 }
 

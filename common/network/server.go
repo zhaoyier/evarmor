@@ -21,6 +21,12 @@ func NewServer(opt ...ServerOption) *Server {
 	for _, o := range opt {
 		o(&opts)
 	}
+	if opts.workerSize <= 0 {
+		opts.workerSize = defaultWorkersNum
+	}
+	if opts.bufferSize <= 0 {
+		opts.bufferSize = BufferSize256
+	}
 
 	s := &Server{
 		opts:       opts,

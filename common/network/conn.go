@@ -5,16 +5,18 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"reflect"
 	"sync"
 
-	"git.ezbuy.me/ezbuy/evarmor/common/log"
+	"git.ezbuy.me/ezbuy/evarmor/rpc/evarmor"
 	"github.com/golang/protobuf/proto"
 	// "google.golang.org/protobuf/proto"
 )
 
 type MessageHandler struct {
-	message proto.Message
-	method  *Method
+	code   string
+	data   string
+	method *Method
 }
 
 type WriteCloser interface {
@@ -36,16 +38,19 @@ type ServerConn struct {
 	handlerCh chan MessageHandler
 	reader    *bufio.Reader
 	writer    *bufio.Writer
+	sendCh    chan []byte
 }
 
 func NewServerConn(id int64, s *Server, conn net.Conn) *ServerConn {
 	sc := &ServerConn{
 		netid:     id,
 		rawConn:   conn,
+		belong:    s,
 		wg:        &sync.WaitGroup{},
 		once:      &sync.Once{},
 		reader:    bufio.NewReader(conn),
 		writer:    bufio.NewWriter(conn),
+		sendCh:    make(chan []byte, s.opts.bufferSize),
 		handlerCh: make(chan MessageHandler, s.opts.bufferSize),
 	}
 	sc.ctx, sc.cancel = context.WithCancel(context.WithValue(s.ctx, serverCtx, s))
@@ -61,6 +66,12 @@ func (sc *ServerConn) SetName(name string) {
 }
 
 func (sc *ServerConn) Start() {
+	if sc.belong == nil {
+		fmt.Printf("====>>1021:\n")
+	}
+	// if sc.belong.opts == nil {
+	// 	fmt.Printf("====>>003:\n")
+	// }
 	onConnect := sc.belong.opts.onConnect
 	if onConnect != nil {
 		onConnect(sc)
@@ -92,7 +103,7 @@ func (sc *ServerConn) readLoop() {
 		if p := recover(); p != nil {
 			fmt.Printf("read panic: %q", p)
 		}
-		sc.wg.Done()
+		// sc.wg.Done()
 		sc.Close()
 	}()
 	// var cDone <-chan struct{}
@@ -109,18 +120,22 @@ func (sc *ServerConn) readLoop() {
 			return
 		default:
 			//读消息并回调接口
-			b, _, err := sc.reader.ReadLine()
-			if err != nil {
-				log.Fatalf("reader read line failed: %q", err)
-				return
-			}
-			fmt.Printf("====>>>data: %+v\n", string(b))
+			// b, _, err := sc.reader.ReadLine()
+			// if err != nil {
+			// 	log.Fatalf("reader read line failed: %q", err)
+			// 	return
+			// }
+			buf := make([]byte, 1024)
+			reqLen, _ := sc.rawConn.Read(buf)
+			fmt.Printf("====>>>data: %+v|%+v\n", string(buf[:reqLen]), reqLen)
 
 			xm := &XMessage{}
-			if err := proto.Unmarshal(b, xm); err != nil {
+			if err := proto.Unmarshal(buf[:reqLen], xm); err != nil {
 				fmt.Printf("====>>0021:%q\n", err)
 				return
 			}
+
+			fmt.Printf("====>>0022:%+v\n", xm)
 
 			onMessage := sc.belong.opts.onMessage
 			handler := sc.belong.GetHandlerFunc(xm.GetCode())
@@ -131,22 +146,49 @@ func (sc *ServerConn) readLoop() {
 					fmt.Printf("no handler or onMessage() found for message %d\n", xm.GetCode())
 				}
 			}
-			sc.handlerCh <- MessageHandler{xm, handler}
-
+			sc.handlerCh <- MessageHandler{xm.GetCode(), xm.GetData(), handler}
 		}
 	}
 }
 
 func (sc *ServerConn) writeLoop() {
+	defer func() {
+		if p := recover(); p != nil {
+			fmt.Printf("write loop panics: %v\n", p)
+		}
+	}()
+	for {
+		select {
+		case <-sc.ctx.Done(): // connection closed
+			fmt.Printf("receiving cancel signal from conn")
+			return
+		case <-sc.belong.ctx.Done():
+			fmt.Printf("receiving cancel signal from server")
+			return
 
+		case pkt := <-sc.sendCh:
+			if pkt != nil {
+				// _, err := sc.writer.Write(pkt)
+				// if err != nil {
+
+				// }
+				// sc.writer.Flush() //TODO 是否断开连接
+
+				if _, err := sc.rawConn.Write(pkt); err != nil {
+					fmt.Printf("write loop data: %q\n", err)
+					return
+				}
+			}
+		}
+	}
 }
 
 func (sc *ServerConn) handleLoop() {
 	defer func() {
 		if p := recover(); p != nil {
-			fmt.Printf("read panic: %q", p)
+			fmt.Printf("handle panic: %q", p)
 		}
-		sc.wg.Done()
+		// sc.wg.Done()
 		sc.Close()
 	}()
 	for {
@@ -156,7 +198,23 @@ func (sc *ServerConn) handleLoop() {
 		case <-sc.belong.ctx.Done():
 			fmt.Printf("receiving cancel signal from server")
 		case hc := <-sc.handlerCh:
-			fmt.Printf("handle do :%+v", hc)
+			fmt.Printf("handle do :%+v\n", hc)
+			ctx := sc.ctx
+			msg, handler := hc.data, hc.method
+			fmt.Printf("====>>0023:%+v|%+v\n", msg, handler)
+
+			// var req proto.Message
+			req := &evarmor.HelloRequest{}
+			fmt.Printf("====>>0024:%+v|%+v\n", []byte(msg), handler)
+			if err := proto.Unmarshal([]byte(msg), req); err != nil {
+				fmt.Printf("proto unmarshal failed :%+v", hc)
+				return
+			}
+			fmt.Printf("====>>0025:%+v|%+v\n", req, nil)
+
+			// handler.Method.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(req)})
+			handler.Method.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(req)})
+
 		}
 	}
 }
