@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"sync"
 
-	"git.ezbuy.me/ezbuy/evarmor/rpc/evarmor"
 	"github.com/golang/protobuf/proto"
 	// "google.golang.org/protobuf/proto"
 )
@@ -200,12 +199,13 @@ func (sc *ServerConn) handleLoop() {
 		case hc := <-sc.handlerCh:
 			fmt.Printf("handle do :%+v\n", hc)
 			ctx := sc.ctx
-			msg, handler := hc.data, hc.method
-			fmt.Printf("====>>0023:%+v|%+v\n", msg, handler)
+			msg, method := hc.data, hc.method
+			fmt.Printf("====>>0023:%+v|%+v\n", msg, method)
 
-			// var req proto.Message
-			req := &evarmor.HelloRequest{}
-			fmt.Printf("====>>0024:%+v|%+v\n", []byte(msg), handler)
+			// var req method.ParamType
+			// req := &evarmor.HelloRequest{}
+			req := reflect.New(method.ParamType.Elem()).Interface().(proto.Message)
+			fmt.Printf("====>>0024:%+v|%+v\n", []byte(msg), method.ParamType)
 			if err := proto.Unmarshal([]byte(msg), req); err != nil {
 				fmt.Printf("proto unmarshal failed :%+v", hc)
 				return
@@ -213,7 +213,7 @@ func (sc *ServerConn) handleLoop() {
 			fmt.Printf("====>>0025:%+v|%+v\n", req, nil)
 
 			// handler.Method.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(req)})
-			handler.Method.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(req)})
+			method.Method.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(req)})
 
 		}
 	}
