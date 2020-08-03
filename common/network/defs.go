@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"time"
 
@@ -16,6 +17,10 @@ const (
 	BufferSize512     = 512
 	BufferSize1024    = 1024
 	defaultWorkersNum = 20
+)
+
+var (
+	ErrWouldBlock = errors.New("would block")
 )
 
 const (
@@ -40,8 +45,15 @@ type onMessageFunc func(proto.Message, WriteCloser)
 //关闭通知
 type onCloseFunc func(WriteCloser)
 
+// 工作池
+type workerFunc func()
+
 //错误通知
 type onErrorFunc func(WriteCloser)
+
+var (
+	globalWorkerPool *WorkerPool
+)
 
 type Method struct {
 	Method    reflect.Value

@@ -16,7 +16,7 @@ type ServerOption func(*options)
 // 	Encode(Message) ([]byte, error)
 // }
 
-func NewServer(opt ...ServerOption) *Server {
+func NewServer(desc string, opt ...ServerOption) *Server {
 	var opts options
 	for _, o := range opt {
 		o(&opts)
@@ -29,6 +29,7 @@ func NewServer(opt ...ServerOption) *Server {
 	}
 
 	s := &Server{
+		desc:       desc,
 		opts:       opts,
 		conns:      &sync.Map{},
 		wg:         &sync.WaitGroup{},
@@ -58,6 +59,7 @@ func (s *Server) Start(addr string) error {
 		}
 	}()
 	for {
+		//TODO 是否监听服务关闭
 		conn, err := l.Accept()
 		if err != nil {
 			if ne, ok := err.(net.Error); ok && ne.Temporary() {
@@ -74,6 +76,9 @@ func (s *Server) Start(addr string) error {
 				case <-s.ctx.Done():
 				}
 				continue
+			}
+			if ne, ok := err.(net.Error); ok && ne.Timeout() {
+				//TODO 超时处理
 			}
 			return err
 		}

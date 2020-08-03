@@ -4,4 +4,11 @@ package evarmor;
 message XMessage {
 	string code = 1;
 	string data = 2;
+	XMessageSource source = 3;
+}
+
+enum XMessageSource {
+	XMessageSourceUnknown = 0;	//用户端消息默认
+	XMessageSourceProxy = 1;	//
+	XMessageSourceChat = 2;		//
 }

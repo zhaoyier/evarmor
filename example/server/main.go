@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -15,8 +15,8 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
 }
 
-func main() {
-	s := network.NewServer()
+func Server() {
+	s := network.NewServer("desc")
 
 	s.RegisterServer(&server{})
 

@@ -23,6 +23,7 @@ type options struct {
 }
 
 type Server struct {
+	desc       string
 	opts       options
 	ctx        context.Context
 	cancel     context.CancelFunc

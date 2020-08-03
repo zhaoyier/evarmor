@@ -66,6 +66,7 @@ func (sc *ServerConn) SetName(name string) {
 
 func (sc *ServerConn) Start() {
 	if sc.belong == nil {
+		// TODO
 		fmt.Printf("====>>1021:\n")
 	}
 	// if sc.belong.opts == nil {
@@ -213,7 +214,22 @@ func (sc *ServerConn) handleLoop() {
 			fmt.Printf("====>>0025:%+v|%+v\n", req, nil)
 
 			// handler.Method.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(req)})
-			method.Method.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(req)})
+			results := method.Method.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(req)})
+			fmt.Printf("====>>0026:%+v|%+v\n", results[0], results[1])
+			erri := results[0].Interface()
+			if err := erri.(error); err != nil {
+				fmt.Printf("====>>0027:%+v|%+v\n", req, err)
+				return
+			}
+			// if err := results[1]; err.(error) != nil {
+			// 	fmt.Printf("====>>0027:%+v|%+v\n", req, err)
+			// 	return
+			// }
+			// resp, err := proto.Marshal(results[0])
+			// if err != nil {
+			// 	fmt.Printf("====>>0028:%+v|%+v\n", req, err)
+			// 	continue
+			// }
 
 		}
 	}

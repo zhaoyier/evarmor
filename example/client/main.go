@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"bufio"
@@ -9,6 +9,7 @@ import (
 	"os"
 	"sync"
 
+	pb2 "git.ezbuy.me/ezbuy/evarmor/common/network"
 	pb "git.ezbuy.me/ezbuy/evarmor/rpc/evarmor"
 	"github.com/golang/protobuf/proto"
 )
@@ -22,7 +23,7 @@ type Resp struct {
 	Status int    `json:"status"`
 }
 
-func main() {
+func Client() {
 	flag.Parse()
 	conn, err := net.Dial("tcp", "localhost:13101")
 	if err != nil {
@@ -46,7 +47,7 @@ func handleWrite(conn net.Conn, wg *sync.WaitGroup) {
 
 	data, _ := proto.Marshal(req)
 
-	xm := &pb.XMessage{
+	xm := &pb2.XMessage{
 		Code: "SayHello",
 		Data: string(data),
 	}

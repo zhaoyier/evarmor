@@ -3,16 +3,36 @@
 
 package evarmor
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import "strings"
+import (
+	context1 "context"
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	grpc1 "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
+	math "math"
+	strings "strings"
+)
+
+import (
+	mservice "git.ezbuy.me/ezbuy/base/dist/mservice"
+	ezcommon "git.ezbuy.me/ezbuy/base/dist/proto/common"
+	context "git.ezbuy.me/ezbuy/base/misc/context"
+	"net/http"
+	"sync"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 var _ = strings.TrimPrefix
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type _ServiceTypeEnum struct {
 	Unknown   ServiceType
@@ -144,6 +164,7 @@ var ServiceType_name = map[int32]string{
 	0: "ServiceTypeUnknown",
 	1: "ServiceTypeGateway",
 }
+
 var ServiceType_value = map[string]int32{
 	"ServiceTypeUnknown": 0,
 	"ServiceTypeGateway": 1,
@@ -152,7 +173,10 @@ var ServiceType_value = map[string]int32{
 func (x ServiceType) String() string {
 	return proto.EnumName(ServiceType_name, int32(x))
 }
-func (ServiceType) EnumDescriptor() ([]byte, []int) { return FileDescriptorEvarmorGateway, []int{0} }
+
+func (ServiceType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_c7b0d79e2531fb12, []int{0}
+}
 
 type _ServiceLevelEnum struct {
 	Unknown   ServiceLevel
@@ -284,6 +308,7 @@ var ServiceLevel_name = map[int32]string{
 	0: "ServiceLevelUnknown",
 	1: "ServiceLevelClient",
 }
+
 var ServiceLevel_value = map[string]int32{
 	"ServiceLevelUnknown": 0,
 	"ServiceLevelClient":  1,
@@ -292,23 +317,300 @@ var ServiceLevel_value = map[string]int32{
 func (x ServiceLevel) String() string {
 	return proto.EnumName(ServiceLevel_name, int32(x))
 }
-func (ServiceLevel) EnumDescriptor() ([]byte, []int) { return FileDescriptorEvarmorGateway, []int{1} }
+
+func (ServiceLevel) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_c7b0d79e2531fb12, []int{1}
+}
+
+type HelloRequest struct {
+	//
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name"`
+}
+
+func (m *HelloRequest) Validate() error {
+	return nil
+}
+
+func (m *HelloRequest) Reset()         { *m = HelloRequest{} }
+func (m *HelloRequest) String() string { return proto.CompactTextString(m) }
+func (*HelloRequest) ProtoMessage()    {}
+func (*HelloRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c7b0d79e2531fb12, []int{0}
+}
+
+func (m *HelloRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_HelloRequest.Unmarshal(m, b)
+}
+func (m *HelloRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_HelloRequest.Marshal(b, m, deterministic)
+}
+func (m *HelloRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HelloRequest.Merge(m, src)
+}
+func (m *HelloRequest) XXX_Size() int {
+	return xxx_messageInfo_HelloRequest.Size(m)
+}
+func (m *HelloRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_HelloRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_HelloRequest proto.InternalMessageInfo
+
+func (m *HelloRequest) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+type HelloReply struct {
+	//
+	Message string `protobuf:"bytes,1,opt,name=message,proto3" json:"message"`
+}
+
+func (m *HelloReply) Validate() error {
+	return nil
+}
+
+func (m *HelloReply) Reset()         { *m = HelloReply{} }
+func (m *HelloReply) String() string { return proto.CompactTextString(m) }
+func (*HelloReply) ProtoMessage()    {}
+func (*HelloReply) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c7b0d79e2531fb12, []int{1}
+}
+
+func (m *HelloReply) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_HelloReply.Unmarshal(m, b)
+}
+func (m *HelloReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_HelloReply.Marshal(b, m, deterministic)
+}
+func (m *HelloReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HelloReply.Merge(m, src)
+}
+func (m *HelloReply) XXX_Size() int {
+	return xxx_messageInfo_HelloReply.Size(m)
+}
+func (m *HelloReply) XXX_DiscardUnknown() {
+	xxx_messageInfo_HelloReply.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_HelloReply proto.InternalMessageInfo
+
+func (m *HelloReply) GetMessage() string {
+	if m != nil {
+		return m.Message
+	}
+	return ""
+}
 
 func init() {
 	proto.RegisterEnum("evarmor.ServiceType", ServiceType_name, ServiceType_value)
 	proto.RegisterEnum("evarmor.ServiceLevel", ServiceLevel_name, ServiceLevel_value)
+	proto.RegisterType((*HelloRequest)(nil), "evarmor.HelloRequest")
+	proto.RegisterType((*HelloReply)(nil), "evarmor.HelloReply")
 }
 
-func init() { proto.RegisterFile("evarmor/gateway.proto", FileDescriptorEvarmorGateway) }
+func init() { proto.RegisterFile("evarmor/gateway.proto", fileDescriptor_c7b0d79e2531fb12) }
 
-var FileDescriptorEvarmorGateway = []byte{
-	// 122 bytes of a gzipped FileDescriptorProto
+var fileDescriptor_c7b0d79e2531fb12 = []byte{
+	// 208 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x04, 0x03, 0x02, 0x01, 0x02, 0xff, 0xe2, 0x12, 0x4d, 0x2d, 0x4b, 0x2c,
 	0xca, 0xcd, 0x2f, 0xd2, 0x4f, 0x4f, 0x2c, 0x49, 0x2d, 0x4f, 0xac, 0xd4, 0x2b, 0x28, 0xca, 0x2f,
-	0xc9, 0x17, 0x62, 0x87, 0x0a, 0x6b, 0xd9, 0x72, 0x71, 0x07, 0xa7, 0x16, 0x95, 0x65, 0x26, 0xa7,
-	0x86, 0x54, 0x16, 0xa4, 0x0a, 0x89, 0x71, 0x09, 0x21, 0x71, 0x43, 0xf3, 0xb2, 0xf3, 0xf2, 0xcb,
-	0xf3, 0x04, 0x18, 0xd0, 0xc4, 0xdd, 0x21, 0x66, 0x09, 0x30, 0x6a, 0xd9, 0x73, 0xf1, 0x40, 0xc5,
-	0x7d, 0x52, 0xcb, 0x52, 0x73, 0x84, 0xc4, 0xb9, 0x84, 0x91, 0xf9, 0xd8, 0x0c, 0x00, 0x4b, 0x38,
-	0xe7, 0x64, 0xa6, 0xe6, 0x95, 0x08, 0x30, 0x26, 0xb1, 0x81, 0xdd, 0x63, 0x0c, 0x08, 0x00, 0x00,
-	0xff, 0xff, 0xb0, 0x10, 0xf0, 0x7c, 0xa8, 0x00, 0x00, 0x00,
+	0xc9, 0x17, 0x62, 0x87, 0x0a, 0x2b, 0x29, 0x71, 0xf1, 0x78, 0xa4, 0xe6, 0xe4, 0xe4, 0x07, 0xa5,
+	0x16, 0x96, 0xa6, 0x16, 0x97, 0x08, 0x09, 0x71, 0xb1, 0xe4, 0x25, 0xe6, 0xa6, 0x4a, 0x30, 0x2a,
+	0x30, 0x6a, 0x70, 0x06, 0x81, 0xd9, 0x4a, 0x6a, 0x5c, 0x5c, 0x50, 0x35, 0x05, 0x39, 0x95, 0x42,
+	0x12, 0x5c, 0xec, 0xb9, 0xa9, 0xc5, 0xc5, 0x89, 0xe9, 0x30, 0x45, 0x30, 0xae, 0x96, 0x2d, 0x17,
+	0x77, 0x70, 0x6a, 0x51, 0x59, 0x66, 0x72, 0x6a, 0x48, 0x65, 0x41, 0xaa, 0x90, 0x18, 0x97, 0x10,
+	0x12, 0x37, 0x34, 0x2f, 0x3b, 0x2f, 0xbf, 0x3c, 0x4f, 0x80, 0x01, 0x4d, 0xdc, 0x1d, 0xe2, 0x2e,
+	0x01, 0x46, 0x2d, 0x7b, 0x2e, 0x1e, 0xa8, 0xb8, 0x4f, 0x6a, 0x59, 0x6a, 0x8e, 0x90, 0x38, 0x97,
+	0x30, 0x32, 0x1f, 0x9b, 0x01, 0x60, 0x09, 0xe7, 0x9c, 0xcc, 0xd4, 0xbc, 0x12, 0x01, 0x46, 0x23,
+	0x7b, 0x2e, 0x56, 0xb0, 0x3b, 0x85, 0xcc, 0xb8, 0x38, 0x82, 0x13, 0x2b, 0x21, 0x6c, 0x51, 0x3d,
+	0xa8, 0x57, 0xf5, 0x90, 0xfd, 0x29, 0x25, 0x8c, 0x2e, 0x5c, 0x90, 0x53, 0x99, 0xc4, 0x06, 0x0e,
+	0x1c, 0x63, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0xd2, 0x4d, 0xab, 0x02, 0x35, 0x01, 0x00, 0x00,
 }
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context1.Context
+var _ grpc1.ClientConn
+var _ http.Client
+var _ ezcommon.Empty
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc1.SupportPackageIsVersion6
+
+const ServiceHello = "evarmor.Hello"
+
+var ServiceMethodHello = []string{
+	"SayHello",
+}
+
+// Client API for Hello service
+
+// HelloClient is the client API for Hello service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type HelloClient interface {
+	SayHello(ctx context.T, in *HelloRequest, opts ...grpc1.CallOption) (*HelloReply, error)
+}
+
+type helloClient struct {
+	cc *grpc1.ClientConn
+}
+
+var helloClientOnce sync.Once
+var helloClientInstance HelloClient
+
+func GetHello() HelloClient {
+	helloClientOnce.Do(func() {
+		var err error
+		helloClientInstance, err = NewHello()
+		if err != nil {
+			panic(err)
+		}
+	})
+	return helloClientInstance
+}
+
+func NewHello() (HelloClient, error) {
+	cfg := mservice.DefaultClientConfig()
+	cfg.Desc = OptionHello
+	cli, err := mservice.NewClientEx(ServiceHello, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return NewHelloClient(cli.GRPC), nil
+}
+
+func NewHelloClient(cc *grpc1.ClientConn) HelloClient {
+	return &helloClient{cc}
+}
+
+func (c *helloClient) SayHello(ctx context.T, in *HelloRequest, opts ...grpc1.CallOption) (*HelloReply, error) {
+	out := new(HelloReply)
+	err := c.cc.Invoke(ctx, "/evarmor.Hello/SayHello", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// HelloServer is the server API for Hello service.
+type HelloServer interface {
+	SayHello(context.T, *HelloRequest) (*HelloReply, error)
+}
+
+func RegisterHelloGrpc(s HelloGrpcRegister) {
+	s.RegisterService(ServiceHello, ServiceMethodHello)
+	RegisterHelloServer(s.GetServer(), s)
+}
+
+func RegisterHelloGrpcImpl(s mservice.GrpcRegister, impl HelloServer) {
+	s.RegisterService(ServiceHello, ServiceMethodHello)
+	RegisterHelloServer(s.GetServer(), impl)
+}
+
+// UnimplementedHelloServer can be embedded to have forward compatible implementations.
+type UnimplementedHelloServer struct {
+}
+
+func (*UnimplementedHelloServer) SayHello(ctx context1.Context, req *HelloRequest) (*HelloReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
+}
+
+func RegisterHelloServer(s *grpc1.Server, srv HelloServer) {
+	s.RegisterService(&_Hello_serviceDesc, srv)
+}
+
+type HelloMServicer interface {
+	RegisterServiceDesc(*ezcommon.ServiceOpDesc)
+	HelloServer
+	mservice.WebApiRegister
+	mservice.GrpcRegister
+}
+
+type HelloGrpcRegister interface {
+	HelloServer
+	mservice.GrpcRegister
+}
+
+func RegisterHello(s HelloMServicer) {
+	s.RegisterServiceDesc(OptionHello)
+	RegisterHelloGrpc(s)
+	RegisterHelloWebapiEx(s)
+}
+
+type HelloWebApiRegister interface {
+	HelloServer
+	mservice.WebApiRegister
+}
+
+func RegisterHelloWebApi(s HelloWebApiRegister) {
+	RegisterHelloWebApiImpl(s, s)
+}
+
+func RegisterHelloWebApiImpl(s mservice.WebApiRegister, impl HelloServer) {
+	wrap := &HelloWebapi{server: impl, register: s}
+	s.WebApiRegister("/api/evarmor.Hello/SayHello", wrap.SayHello)
+}
+
+func RegisterHelloWebapiEx(s HelloWebApiRegister) {
+	wrap := &HelloWebapi{server: s, register: s}
+	s.WebApiRegisterMethod("evarmor.Hello", "SayHello", wrap.SayHello)
+}
+
+type HelloWebapi struct {
+	server   HelloServer
+	register mservice.WebApiRegister
+}
+
+func (s *HelloWebapi) SayHello(ctx *context.T, w http.ResponseWriter, req *http.Request) {
+	params := new(HelloRequest)
+	if err := s.register.WebApiDecode(ctx, req, params); err != nil {
+		s.register.WebApiHandleResp(ctx, w, nil, err)
+		return
+	}
+	resp, err := s.server.SayHello(*ctx, params)
+	s.register.WebApiHandleResp(ctx, w, resp, err)
+}
+
+func _Hello_SayHello_Handler(srv interface{}, ctx context1.Context, dec func(interface{}) error, interceptor grpc1.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HelloRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if err := in.Validate(); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HelloServer).SayHello(context.From(ctx), in)
+	}
+	info := &grpc1.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/evarmor.Hello/SayHello",
+	}
+	handler := func(ctx context1.Context, req interface{}) (interface{}, error) {
+		return srv.(HelloServer).SayHello(context.From(ctx), req.(*HelloRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Hello_serviceDesc = grpc1.ServiceDesc{
+	ServiceName: "evarmor.Hello",
+	HandlerType: (*HelloServer)(nil),
+	Methods: []grpc1.MethodDesc{
+		{
+			MethodName: "SayHello",
+			Handler:    _Hello_SayHello_Handler,
+		},
+	},
+	Streams:  []grpc1.StreamDesc{},
+	Metadata: "evarmor/gateway.proto",
+}
+
+var OptionHello = ezcommon.GenOption([]byte{
+	// 27 bytes of Option
+	0x0a, 0x0d, 0x65, 0x76, 0x61, 0x72, 0x6d, 0x6f, 0x72, 0x2e, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x1a,
+	0x0a, 0x0a, 0x08, 0x53, 0x61, 0x79, 0x48, 0x65, 0x6c, 0x6c, 0x6f,
+})
