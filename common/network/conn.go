@@ -25,7 +25,7 @@ type WriteCloser interface {
 
 type ServerConn struct {
 	netid     int64
-	name      string
+	addr      string
 	rawConn   net.Conn
 	pending   []int64
 	ctx       context.Context
@@ -38,6 +38,8 @@ type ServerConn struct {
 	reader    *bufio.Reader
 	writer    *bufio.Writer
 	sendCh    chan []byte
+	source    XMessageSource
+	hashNum   int
 }
 
 func NewServerConn(id int64, s *Server, conn net.Conn) *ServerConn {
@@ -53,7 +55,8 @@ func NewServerConn(id int64, s *Server, conn net.Conn) *ServerConn {
 		handlerCh: make(chan MessageHandler, s.opts.bufferSize),
 	}
 	sc.ctx, sc.cancel = context.WithCancel(context.WithValue(s.ctx, serverCtx, s))
-	sc.name = conn.RemoteAddr().String()
+	sc.addr = conn.RemoteAddr().String()
+	sc.hashNum = hashServiceAddr(sc.addr)
 	sc.pending = []int64{}
 	return sc
 }
@@ -61,7 +64,7 @@ func NewServerConn(id int64, s *Server, conn net.Conn) *ServerConn {
 func (sc *ServerConn) SetName(name string) {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
-	sc.name = name
+	sc.addr = name
 }
 
 func (sc *ServerConn) Start() {
@@ -146,7 +149,19 @@ func (sc *ServerConn) readLoop() {
 					fmt.Printf("no handler or onMessage() found for message %d\n", xm.GetCode())
 				}
 			}
-			sc.handlerCh <- MessageHandler{xm.GetCode(), xm.GetData(), handler}
+
+			serviceType := XServiceType(xm.GetNetid() >> 48)
+
+			switch serviceType {
+			case XServiceTypeEnum.Unknown: //转发
+				sc.dispatch(xm)
+			case XServiceTypeEnum.Proxy: //处理消息
+				sc.handlerCh <- MessageHandler{xm.GetCode(), xm.GetData(), handler}
+			case XServiceTypeEnum.Logic: //同步服务
+				sc.belong.SyncPlugin(xm.GetData(), sc)
+			default:
+				fmt.Errorf("invalid request ID: %d", xm.GetNetid())
+			}
 		}
 	}
 }
@@ -202,6 +217,8 @@ func (sc *ServerConn) handleLoop() {
 			ctx := sc.ctx
 			msg, method := hc.data, hc.method
 			fmt.Printf("====>>0023:%+v|%+v\n", msg, method)
+			// 存在代理服务器，转发消息
+			// if hc.
 
 			// var req method.ParamType
 			// req := &evarmor.HelloRequest{}
@@ -221,6 +238,14 @@ func (sc *ServerConn) handleLoop() {
 				fmt.Printf("====>>0027:%+v|%+v\n", req, err)
 				return
 			}
+			resi := results[1].Interface().(proto.Message)
+			resp, err := proto.Marshal(resi)
+			if err != nil {
+				//TODO 返回错误信息
+			}
+
+			sc.rawConn.Write(resp)
+
 			// if err := results[1]; err.(error) != nil {
 			// 	fmt.Printf("====>>0027:%+v|%+v\n", req, err)
 			// 	return
@@ -233,4 +258,43 @@ func (sc *ServerConn) handleLoop() {
 
 		}
 	}
+}
+
+//网关转发消息
+func (sc *ServerConn) dispatch(xm *XMessage) {
+	//发往用户/发往业务
+	if xm.GetNetid() <= 0 { //发往业务
+		//查找目的服务器连接
+		sc, err := sc.belong.GetPlugin(xm.Code, sc)
+		if err != nil {
+			fmt.Errorf("not found plugin")
+			return
+		}
+
+		data, _ := proto.Marshal(&XMessage{
+			Code:  xm.GetCode(),
+			Data:  xm.GetData(),
+			Netid: sc.netid,
+		})
+
+		if _, err := sc.rawConn.Write(data); err != nil {
+			fmt.Printf("write loop data: %q\n", err)
+			return
+		}
+	} else { //发往用户
+		val, ok := sc.belong.conns.Load(xm.GetNetid())
+		if !ok {
+			fmt.Errorf("send user: %+v", xm.GetNetid())
+		}
+		conn := val.(*ServerConn)
+		data, _ := proto.Marshal(&XMessage{
+			Code: xm.GetCode(),
+			Data: xm.GetData(),
+		})
+
+		// fmt.Printf("====>>001:%+v\n", conn)
+		conn.rawConn.Write(data)
+	}
+
+	//TODO 发送消息
 }

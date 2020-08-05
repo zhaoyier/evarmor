@@ -22,100 +22,85 @@ var _ = strings.TrimPrefix
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-type _XMessageSourceEnum struct {
-	Unknown   XMessageSource
-	Proxy     XMessageSource
-	Chat      XMessageSource
+type _XServiceTypeEnum struct {
+	Unknown   XServiceType
+	Client    XServiceType
+	Proxy     XServiceType
+	Logic     XServiceType
 	TotalSize int
-	List      []XMessageSource
-	ZeroList  []XMessageSource
+	List      []XServiceType
+	ZeroList  []XServiceType
 }
 
-var XMessageSourceEnum = _XMessageSourceEnum{
+var XServiceTypeEnum = _XServiceTypeEnum{
 	0,
-	1,
-	2,
-	3,
-	[]XMessageSource{
-		XMessageSource_XMessageSourceProxy,
-		XMessageSource_XMessageSourceChat,
+	10000,
+	20000,
+	30000,
+	4,
+	[]XServiceType{
+		XServiceType_XServiceTypeClient,
+		XServiceType_XServiceTypeProxy,
+		XServiceType_XServiceTypeLogic,
 	},
-	[]XMessageSource{
-		XMessageSource_XMessageSourceUnknown,
-		XMessageSource_XMessageSourceProxy,
-		XMessageSource_XMessageSourceChat,
+	[]XServiceType{
+		XServiceType_XServiceTypeUnknown,
+		XServiceType_XServiceTypeClient,
+		XServiceType_XServiceTypeProxy,
+		XServiceType_XServiceTypeLogic,
 	},
 }
 
-func (x *_XMessageSourceEnum) Parse(short string) XMessageSource {
-	return XMessageSource(XMessageSource_value["XMessageSource"+strings.TrimPrefix(short, "XMessageSource")])
+func (x *_XServiceTypeEnum) Parse(short string) XServiceType {
+	return XServiceType(XServiceType_value["XServiceType"+strings.TrimPrefix(short, "XServiceType")])
 }
 
-func (x XMessageSource) IsUnknown() bool {
-	return x == XMessageSourceEnum.Unknown
+func (x XServiceType) IsUnknown() bool {
+	return x == XServiceTypeEnum.Unknown
 }
 
-func (x XMessageSource) BitHasUnknown() bool {
-	return x.BitHas(XMessageSourceEnum.Unknown)
+func (x XServiceType) GetUnknown() XServiceType {
+	return XServiceTypeEnum.Unknown
 }
 
-func (x XMessageSource) BitOrUnknown() XMessageSource {
-	x.BitOr(XMessageSourceEnum.Unknown)
-	return x
+func (x XServiceType) IsClient() bool {
+	return x == XServiceTypeEnum.Client
 }
 
-func (x XMessageSource) GetUnknown() XMessageSource {
-	return XMessageSourceEnum.Unknown
+func (x XServiceType) GetClient() XServiceType {
+	return XServiceTypeEnum.Client
 }
 
-func (x XMessageSource) IsProxy() bool {
-	return x == XMessageSourceEnum.Proxy
+func (x XServiceType) IsProxy() bool {
+	return x == XServiceTypeEnum.Proxy
 }
 
-func (x XMessageSource) BitHasProxy() bool {
-	return x.BitHas(XMessageSourceEnum.Proxy)
+func (x XServiceType) GetProxy() XServiceType {
+	return XServiceTypeEnum.Proxy
 }
 
-func (x XMessageSource) BitOrProxy() XMessageSource {
-	x.BitOr(XMessageSourceEnum.Proxy)
-	return x
+func (x XServiceType) IsLogic() bool {
+	return x == XServiceTypeEnum.Logic
 }
 
-func (x XMessageSource) GetProxy() XMessageSource {
-	return XMessageSourceEnum.Proxy
+func (x XServiceType) GetLogic() XServiceType {
+	return XServiceTypeEnum.Logic
 }
 
-func (x XMessageSource) IsChat() bool {
-	return x == XMessageSourceEnum.Chat
-}
-
-func (x XMessageSource) BitHasChat() bool {
-	return x.BitHas(XMessageSourceEnum.Chat)
-}
-
-func (x XMessageSource) BitOrChat() XMessageSource {
-	x.BitOr(XMessageSourceEnum.Chat)
-	return x
-}
-
-func (x XMessageSource) GetChat() XMessageSource {
-	return XMessageSourceEnum.Chat
-}
-
-func (x XMessageSource) Valid() bool {
-	if x == XMessageSource_XMessageSourceUnknown {
+func (x XServiceType) Valid() bool {
+	if x == XServiceType_XServiceTypeUnknown {
 		return false
 	}
 	return x.ZeroValid()
 }
 
-func (x XMessageSource) ZeroValid() bool {
-	_, ok := XMessageSource_name[int32(x)]
+func (x XServiceType) ZeroValid() bool {
+	_, ok := XServiceType_name[int32(x)]
 	return ok
 }
-func (x XMessageSource) Short() string {
+func (x XServiceType) Short() string {
 	n := x.String()
-	typ := "XMessageSource"
+	typ := "XServiceType"
 	if len(n) > len(typ) {
 		if n[:len(typ)] == typ {
 			return n[len(typ):]
@@ -124,69 +109,46 @@ func (x XMessageSource) Short() string {
 	return n
 
 }
-func (x XMessageSource) BitString() []string {
-	name := make([]string, 0, len(XMessageSourceEnum.List))
-	for _, item := range XMessageSourceEnum.List {
-		if x.BitHas(item) {
-			name = append(name, item.Short())
-		}
-	}
-	return name
-
+func (x *XServiceType) SetValue(v int32) {
+	*x = XServiceType(v)
 }
 
-func (x XMessageSource) BitValid() bool {
-	return x.BitHas(XMessageSourceEnum.List...)
-}
-func (x *XMessageSource) BitOr(item XMessageSource) {
-	*x |= item
-}
-func (x XMessageSource) BitHas(xs ...XMessageSource) bool {
-	for _, item := range xs {
-		if x&item > 0 {
-			return true
-		}
-	}
-	return false
-}
-
-func (x *XMessageSource) SetValue(v int32) {
-	*x = XMessageSource(v)
-}
-
-func (x XMessageSource) GetValue() int32 {
+func (x XServiceType) GetValue() int32 {
 	return int32(x)
 }
 
-func (x *XMessageSource) Type() string {
-	return "XMessageSource"
+func (x *XServiceType) Type() string {
+	return "XServiceType"
 }
 
-type XMessageSource int32
+type XServiceType int32
 
 const (
-	XMessageSource_XMessageSourceUnknown XMessageSource = 0
-	XMessageSource_XMessageSourceProxy   XMessageSource = 1
-	XMessageSource_XMessageSourceChat    XMessageSource = 2
+	XServiceType_XServiceTypeUnknown XServiceType = 0
+	XServiceType_XServiceTypeClient  XServiceType = 10000
+	XServiceType_XServiceTypeProxy   XServiceType = 20000
+	XServiceType_XServiceTypeLogic   XServiceType = 30000
 )
 
-var XMessageSource_name = map[int32]string{
-	0: "XMessageSourceUnknown",
-	1: "XMessageSourceProxy",
-	2: "XMessageSourceChat",
+var XServiceType_name = map[int32]string{
+	0:     "XServiceTypeUnknown",
+	10000: "XServiceTypeClient",
+	20000: "XServiceTypeProxy",
+	30000: "XServiceTypeLogic",
 }
 
-var XMessageSource_value = map[string]int32{
-	"XMessageSourceUnknown": 0,
-	"XMessageSourceProxy":   1,
-	"XMessageSourceChat":    2,
+var XServiceType_value = map[string]int32{
+	"XServiceTypeUnknown": 0,
+	"XServiceTypeClient":  10000,
+	"XServiceTypeProxy":   20000,
+	"XServiceTypeLogic":   30000,
 }
 
-func (x XMessageSource) String() string {
-	return proto.EnumName(XMessageSource_name, int32(x))
+func (x XServiceType) String() string {
+	return proto.EnumName(XServiceType_name, int32(x))
 }
 
-func (XMessageSource) EnumDescriptor() ([]byte, []int) {
+func (XServiceType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_c7ce74c29c06c17c, []int{0}
 }
 
@@ -196,7 +158,7 @@ type XMessage struct {
 	//
 	Data string `protobuf:"bytes,2,opt,name=data,proto3" json:"data"`
 	//
-	Source XMessageSource `protobuf:"varint,3,opt,name=source,proto3,enum=evarmor.XMessageSource" json:"source"`
+	Netid int64 `protobuf:"varint,3,opt,name=netid,proto3" json:"netid"`
 }
 
 func (m *XMessage) Validate() error {
@@ -242,31 +204,109 @@ func (m *XMessage) GetData() string {
 	return ""
 }
 
-func (m *XMessage) GetSource() XMessageSource {
+func (m *XMessage) GetNetid() int64 {
 	if m != nil {
-		return m.Source
+		return m.Netid
 	}
-	return XMessageSource_XMessageSourceUnknown
+	return 0
 }
 
+type Ping struct {
+	//
+	Names []string `protobuf:"bytes,1,rep,name=names,proto3" json:"names"`
+}
+
+func (m *Ping) Validate() error {
+	return nil
+}
+
+func (m *Ping) Reset()         { *m = Ping{} }
+func (m *Ping) String() string { return proto.CompactTextString(m) }
+func (*Ping) ProtoMessage()    {}
+func (*Ping) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c7ce74c29c06c17c, []int{1}
+}
+
+func (m *Ping) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Ping.Unmarshal(m, b)
+}
+func (m *Ping) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Ping.Marshal(b, m, deterministic)
+}
+func (m *Ping) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Ping.Merge(m, src)
+}
+func (m *Ping) XXX_Size() int {
+	return xxx_messageInfo_Ping.Size(m)
+}
+func (m *Ping) XXX_DiscardUnknown() {
+	xxx_messageInfo_Ping.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Ping proto.InternalMessageInfo
+
+func (m *Ping) GetNames() []string {
+	if m != nil {
+		return m.Names
+	}
+	return nil
+}
+
+type Pong struct {
+}
+
+func (m *Pong) Validate() error {
+	return nil
+}
+
+func (m *Pong) Reset()         { *m = Pong{} }
+func (m *Pong) String() string { return proto.CompactTextString(m) }
+func (*Pong) ProtoMessage()    {}
+func (*Pong) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c7ce74c29c06c17c, []int{2}
+}
+
+func (m *Pong) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Pong.Unmarshal(m, b)
+}
+func (m *Pong) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Pong.Marshal(b, m, deterministic)
+}
+func (m *Pong) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Pong.Merge(m, src)
+}
+func (m *Pong) XXX_Size() int {
+	return xxx_messageInfo_Pong.Size(m)
+}
+func (m *Pong) XXX_DiscardUnknown() {
+	xxx_messageInfo_Pong.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Pong proto.InternalMessageInfo
+
 func init() {
-	proto.RegisterEnum("evarmor.XMessageSource", XMessageSource_name, XMessageSource_value)
+	proto.RegisterEnum("evarmor.XServiceType", XServiceType_name, XServiceType_value)
 	proto.RegisterType((*XMessage)(nil), "evarmor.XMessage")
+	proto.RegisterType((*Ping)(nil), "evarmor.Ping")
+	proto.RegisterType((*Pong)(nil), "evarmor.Pong")
 }
 
 func init() { proto.RegisterFile("evarmor/common.proto", fileDescriptor_c7ce74c29c06c17c) }
 
 var fileDescriptor_c7ce74c29c06c17c = []byte{
-	// 172 bytes of a gzipped FileDescriptorProto
+	// 216 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x04, 0x03, 0x02, 0x01, 0x02, 0xff, 0xe2, 0x12, 0x49, 0x2d, 0x4b, 0x2c,
 	0xca, 0xcd, 0x2f, 0xd2, 0x4f, 0xce, 0xcf, 0xcd, 0xcd, 0xcf, 0xd3, 0x2b, 0x28, 0xca, 0x2f, 0xc9,
-	0x17, 0x62, 0x87, 0x8a, 0x2a, 0x25, 0x73, 0x71, 0x44, 0xf8, 0xa6, 0x16, 0x17, 0x27, 0xa6, 0xa7,
+	0x17, 0x62, 0x87, 0x8a, 0x2a, 0x79, 0x70, 0x71, 0x44, 0xf8, 0xa6, 0x16, 0x17, 0x27, 0xa6, 0xa7,
 	0x0a, 0x09, 0x71, 0xb1, 0x24, 0xe7, 0xa7, 0xa4, 0x4a, 0x30, 0x2a, 0x30, 0x6a, 0x70, 0x06, 0x81,
-	0xd9, 0x20, 0xb1, 0x94, 0xc4, 0x92, 0x44, 0x09, 0x26, 0x88, 0x18, 0x88, 0x2d, 0xa4, 0xcf, 0xc5,
-	0x56, 0x9c, 0x5f, 0x5a, 0x94, 0x9c, 0x2a, 0xc1, 0xac, 0xc0, 0xa8, 0xc1, 0x67, 0x24, 0xae, 0x07,
-	0x35, 0x4d, 0x0f, 0x66, 0x54, 0x30, 0x58, 0x3a, 0x08, 0xaa, 0x4c, 0x2b, 0x86, 0x8b, 0x0f, 0x55,
-	0x46, 0x48, 0x92, 0x4b, 0x14, 0x55, 0x24, 0x34, 0x2f, 0x3b, 0x2f, 0xbf, 0x3c, 0x4f, 0x80, 0x41,
-	0x48, 0x9c, 0x4b, 0x18, 0x55, 0x2a, 0xa0, 0x28, 0xbf, 0xa2, 0x52, 0x80, 0x51, 0x48, 0x8c, 0x4b,
-	0x08, 0x55, 0xc2, 0x39, 0x23, 0xb1, 0x44, 0x80, 0x29, 0x89, 0x0d, 0xec, 0x25, 0x63, 0x40, 0x00,
-	0x00, 0x00, 0xff, 0xff, 0xff, 0xcb, 0xa5, 0xff, 0xea, 0x00, 0x00, 0x00,
+	0xd9, 0x20, 0xb1, 0x94, 0xc4, 0x92, 0x44, 0x09, 0x26, 0x88, 0x18, 0x88, 0x2d, 0x24, 0xc2, 0xc5,
+	0x9a, 0x97, 0x5a, 0x92, 0x99, 0x22, 0xc1, 0xac, 0xc0, 0xa8, 0xc1, 0x1c, 0x04, 0xe1, 0x28, 0xc9,
+	0x70, 0xb1, 0x04, 0x64, 0xe6, 0xa5, 0x83, 0x65, 0x13, 0x73, 0x53, 0x8b, 0x25, 0x18, 0x15, 0x98,
+	0x35, 0x38, 0x83, 0x20, 0x1c, 0x25, 0x36, 0x2e, 0x96, 0x80, 0xfc, 0xbc, 0x74, 0xad, 0x22, 0x2e,
+	0x9e, 0x88, 0xe0, 0xd4, 0xa2, 0xb2, 0xcc, 0xe4, 0xd4, 0x90, 0xca, 0x82, 0x54, 0x21, 0x71, 0x2e,
+	0x61, 0x64, 0x7e, 0x68, 0x5e, 0x76, 0x5e, 0x7e, 0x79, 0x9e, 0x00, 0x83, 0x90, 0x38, 0x97, 0x10,
+	0xb2, 0x84, 0x73, 0x4e, 0x66, 0x6a, 0x5e, 0x89, 0xc0, 0x04, 0x3f, 0x21, 0x71, 0x2e, 0x41, 0x64,
+	0x89, 0x80, 0xa2, 0xfc, 0x8a, 0x4a, 0x81, 0x05, 0x73, 0x18, 0xd1, 0x25, 0x7c, 0xf2, 0xd3, 0x33,
+	0x93, 0x05, 0x36, 0xbc, 0x62, 0x4c, 0x62, 0x03, 0xfb, 0xd9, 0x18, 0x10, 0x00, 0x00, 0xff, 0xff,
+	0x25, 0xbb, 0x55, 0x60, 0x0b, 0x01, 0x00, 0x00,
 }

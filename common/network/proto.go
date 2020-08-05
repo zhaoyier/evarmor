@@ -2,11 +2,7 @@ package network
 
 import (
 	"bufio"
-	"context"
 	"crypto/tls"
-	"net"
-	"sync"
-	"time"
 	// "google.golang.org/protobuf/proto"
 )
 
@@ -20,19 +16,6 @@ type options struct {
 	workerSize int  // numbers of worker go-routines
 	bufferSize int  // size of buffered channel
 	reconnect  bool // for ClientConn use only
-}
-
-type Server struct {
-	desc       string
-	opts       options
-	ctx        context.Context
-	cancel     context.CancelFunc
-	conns      *sync.Map
-	mu         sync.Mutex // guards following
-	lis        map[string]net.Listener
-	wg         *sync.WaitGroup
-	delay      time.Duration
-	serviceMap map[string]*Method
 }
 
 // 分割线

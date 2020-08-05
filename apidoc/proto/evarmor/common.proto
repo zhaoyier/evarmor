@@ -1,14 +1,29 @@
 syntax = "proto3";
 package evarmor;
 
+// service Intranet {
+// 	rpc Ping(PingReq) returns (Pong);
+// 	rpc SyncService(SyncServiceReq) returns(SyncServiceResp);
+// }
+
 message XMessage {
 	string code = 1;
 	string data = 2;
-	XMessageSource source = 3;
+	int64 netid = 3;
 }
 
-enum XMessageSource {
-	XMessageSourceUnknown = 0;	//用户端消息默认
-	XMessageSourceProxy = 1;	//
-	XMessageSourceChat = 2;		//
+enum XServiceType {
+	XServiceTypeUnknown = 0;	//用户端消息默认
+	XServiceTypeClient = 10000;	//
+	XServiceTypeProxy = 20000;	//
+	XServiceTypeLogic = 30000;		//
 }
+
+message Ping {
+	repeated string names = 1;	//接口名称
+}
+
+message Pong {
+
+}
+
