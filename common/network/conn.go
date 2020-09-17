@@ -38,8 +38,8 @@ type ServerConn struct {
 	reader    *bufio.Reader
 	writer    *bufio.Writer
 	sendCh    chan []byte
-	source    XMessageSource
-	hashNum   int
+	// source    XMessageSource
+	hashNum int
 }
 
 func NewServerConn(id int64, s *Server, conn net.Conn) *ServerConn {
