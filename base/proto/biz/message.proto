@@ -1,0 +1,34 @@
+syntax = "proto3";
+package biz;
+
+// service Intranet {
+// 	rpc Ping(PingReq) returns (Pong);
+// 	rpc SyncService(SyncServiceReq) returns(SyncServiceResp);
+// }
+
+message CMessage {
+	string code = 1;
+	bytes data = 2;
+}
+
+message XMessage {
+    string code = 1;
+	bytes data = 2;
+	int64 netid = 3;
+}
+
+enum XServiceType {
+	XServiceTypeUnknown = 0;	//用户端消息默认
+	XServiceTypeClient = 10000;	//
+	XServiceTypeProxy = 20000;	//
+	XServiceTypeLogic = 30000;		//
+}
+
+message Ping {
+	repeated string names = 1;	//接口名称
+}
+
+message Pong {
+
+}
+
