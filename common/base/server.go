@@ -107,6 +107,12 @@ func OnErrorOption(cb func(WriteCloser)) ServerOption {
 	}
 }
 
+// key: []{"1", "2"}
+// type ProxyInfo struct {
+// 	host   string
+// 	update int64
+// }
+
 // Server  is a server to serve TCP requests.
 type Server struct {
 	opts   options
@@ -118,8 +124,10 @@ type Server struct {
 	mu     sync.Mutex // guards following
 	lis    map[net.Listener]bool
 	// for periodically running function every duration.
-	interv time.Duration
-	sched  onScheduleFunc
+	interv    time.Duration
+	sched     onScheduleFunc
+	proxy     *sync.Map // 注册代理服务
+	proxyConn *sync.Map // 代理连接
 }
 
 // NewServer returns a new TCP server which has not started
@@ -333,6 +341,29 @@ func (s *Server) Stop() {
 
 	holmes.Infoln("server stopped gracefully, bye.")
 	os.Exit(0)
+}
+
+func (s *Server) InitProxy() {
+	s.proxy, s.proxyConn = &sync.Map{}, &sync.Map{}
+}
+
+func (s *Server) RegistProxy(name, host string) {
+	if s.proxy == nil {
+		return
+	}
+	val, ok := s.proxy.Load(name)
+	if !ok {
+		return
+	}
+
+	hosts := val.([]string)
+	for _, h := range hosts {
+		if h == host {
+			return
+		}
+	}
+	hosts = append(hosts, host)
+	s.proxy.Store(name, hosts)
 }
 
 // Retrieve the extra data(i.e. net id), and then redispatch timeout callbacks
