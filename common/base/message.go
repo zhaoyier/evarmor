@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/leesper/holmes"
 )
 
@@ -140,7 +141,7 @@ func HandleHeartBeat(ctx context.Context, c WriteCloser) {
 // Codec is the interface for message coder and decoder.
 // Application programmer can define a custom codec themselves.
 type Codec interface {
-	Decode(net.Conn) (Message, error)
+	Decode(net.Conn) (proto.Message, error)
 	Encode(Message) ([]byte, error)
 }
 
@@ -149,7 +150,7 @@ type Codec interface {
 type TypeLengthValueCodec struct{}
 
 // Decode decodes the bytes data into Message
-func (codec TypeLengthValueCodec) Decode(raw net.Conn) (Message, error) {
+func (codec TypeLengthValueCodec) Decode(raw net.Conn) (proto.Message, error) {
 	byteChan := make(chan []byte)
 	errorChan := make(chan error)
 
