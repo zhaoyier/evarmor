@@ -140,3 +140,11 @@ func printStack() {
 	n := runtime.Stack(buf[:], false)
 	os.Stderr.Write(buf[:n])
 }
+
+type ServiceHandler interface {
+}
+
+// type Method struct {
+// 	Method    reflect.Value
+// 	ParamType reflect.Type //XXXXRequest的实际类型
+// }

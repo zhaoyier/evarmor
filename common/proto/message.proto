@@ -3,11 +3,11 @@ package proto;
 
 message CMessage {
 	string code = 1;
-	string data = 2;
+	bytes data = 2;
 }
 
 message XMessage {
 	string code = 1;
-	string data = 2;
+	bytes data = 2;
 	int64 netid = 3;
 }

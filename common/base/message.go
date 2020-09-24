@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"net"
+	"reflect"
 
+	mproto "git.ezbuy.me/ezbuy/evarmor/common/proto"
+	"git.ezbuy.me/ezbuy/evarmor/common/utils"
 	"github.com/golang/protobuf/proto"
 	"github.com/leesper/holmes"
 )
@@ -34,9 +36,14 @@ func (f HandlerFunc) Handle(ctx context.Context, c WriteCloser) {
 type UnmarshalFunc func([]byte) (Message, error)
 
 // handlerUnmarshaler is a combination of unmarshal and handle functions for message.
+// type handlerUnmarshaler struct {
+// 	handler     HandlerFunc
+// 	unmarshaler UnmarshalFunc
+// }
+
 type handlerUnmarshaler struct {
-	handler     HandlerFunc
-	unmarshaler UnmarshalFunc
+	Method    reflect.Value
+	ParamType reflect.Type //XXXXRequest的实际类型
 }
 
 var (
@@ -56,14 +63,36 @@ func init() {
 // If no handler function provided, the message will not be handled unless you
 // set a default one by calling SetOnMessageCallback.
 // If Register being called twice on one msgType, it will panics.
-func Register(msgType int32, unmarshaler func([]byte) (Message, error), handler func(context.Context, WriteCloser)) {
-	if _, ok := messageRegistry[msgType]; ok {
-		panic(fmt.Sprintf("trying to register message %d twice", msgType))
+// func Register(msgType int32, unmarshaler func([]byte) (Message, error), handler func(context.Context, WriteCloser)) {
+// 	if _, ok := messageRegistry[msgType]; ok {
+// 		panic(fmt.Sprintf("trying to register message %d twice", msgType))
+// 	}
+
+// 	messageRegistry[msgType] = handlerUnmarshaler{
+// 		unmarshaler: unmarshaler,
+// 		handler:     HandlerFunc(handler),
+// 	}
+// }
+
+// ServiceHandler
+func RegisterServer(srv ServiceHandler) {
+	tf := reflect.TypeOf(srv)
+	v := reflect.ValueOf(srv)
+	if tf.NumMethod() == 0 {
+		// TODO 临时注销
+		// panic("no method found for serivce: " + t.Name())
 	}
 
-	messageRegistry[msgType] = handlerUnmarshaler{
-		unmarshaler: unmarshaler,
-		handler:     HandlerFunc(handler),
+	for i := 0; i < tf.NumMethod(); i++ {
+		name := tf.Method(i).Name
+		msgType := utils.CRC32(name)
+		if _, ok := messageRegistry[msgType]; ok {
+			panic("duplicate register service:" + tf.Method(i).Name)
+		}
+		messageRegistry[msgType] = handlerUnmarshaler{
+			Method:    v.Method(i),
+			ParamType: tf.Method(i).Type.In(2),
+		}
 	}
 }
 
@@ -141,16 +170,15 @@ func HandleHeartBeat(ctx context.Context, c WriteCloser) {
 // Codec is the interface for message coder and decoder.
 // Application programmer can define a custom codec themselves.
 type Codec interface {
-	Decode(net.Conn) (proto.Message, error)
-	Encode(Message) ([]byte, error)
+	Decode(net.Conn) (*mproto.XMessage, error)
+	Encode(*mproto.XMessage) ([]byte, error)
 }
 
 // TypeLengthValueCodec defines a special codec.
 // Format: type-length-value |4 bytes|4 bytes|n bytes <= 8M|
 type TypeLengthValueCodec struct{}
 
-// Decode decodes the bytes data into Message
-func (codec TypeLengthValueCodec) Decode(raw net.Conn) (proto.Message, error) {
+func (codec TypeLengthValueCodec) Decode(raw net.Conn) (*mproto.XMessage, error) {
 	byteChan := make(chan []byte)
 	errorChan := make(chan error)
 
@@ -206,23 +234,24 @@ func (codec TypeLengthValueCodec) Decode(raw net.Conn) (proto.Message, error) {
 			return nil, err
 		}
 
-		// deserialize message from bytes
-		unmarshaler := GetUnmarshalFunc(msgType)
-		if unmarshaler == nil {
-			return nil, ErrUndefined(msgType)
+		var msg *mproto.XMessage
+		if err := proto.Unmarshal(msgBytes, msg); err != nil {
+			return nil, err
 		}
-		return unmarshaler(msgBytes)
+
+		return msg, nil
 	}
 }
 
 // Encode encodes the message into bytes data.
-func (codec TypeLengthValueCodec) Encode(msg Message) ([]byte, error) {
-	data, err := msg.Serialize()
+func (codec TypeLengthValueCodec) Encode(msg *mproto.XMessage) ([]byte, error) {
+	data, err := proto.Marshal(msg)
 	if err != nil {
 		return nil, err
 	}
 	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.LittleEndian, msg.MessageNumber())
+
+	binary.Write(buf, binary.LittleEndian, utils.CRC32(msg.GetCode()))
 	binary.Write(buf, binary.LittleEndian, int32(len(data)))
 	buf.Write(data)
 	packet := buf.Bytes()
