@@ -26,7 +26,7 @@ func main() {
 		<-c
 		proxyServer.Stop()
 	}()
-	service.Beacon([]string{})
+	// service.Beacon([]string{})
 
 	proxyServer.Start(l)
 }

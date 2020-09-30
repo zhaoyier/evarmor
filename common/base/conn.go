@@ -94,6 +94,11 @@ func (sc *ServerConn) SetName(name string) {
 	sc.name = name
 }
 
+// Belong returns server of this conn
+func (sc *ServerConn) Belong() *Server {
+	return sc.belong
+}
+
 // Name returns the name of server connection.
 func (sc *ServerConn) Name() string {
 	sc.mu.Lock()

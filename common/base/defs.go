@@ -49,6 +49,11 @@ const (
 	ContextTimeout    = 10 * time.Second
 )
 
+// 内部使用接口名称
+const (
+	InternalRegisterHandler = "internal_register_handler"
+)
+
 type onConnectFunc func(WriteCloser) bool
 type onMessageFunc func(*mproto.XMessage, WriteCloser)
 type onCloseFunc func(WriteCloser)

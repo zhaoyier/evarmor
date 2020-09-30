@@ -11,3 +11,7 @@ message XMessage {
 	bytes data = 2;
 	int64 netid = 3;
 }
+
+// message RegisterHandler {
+// 	string name = 1;
+// }

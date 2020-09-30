@@ -131,7 +131,7 @@ type Server struct {
 	// for periodically running function every duration.
 	interv  time.Duration
 	sched   onScheduleFunc
-	proxies *sync.Map // 注册代理服务
+	proxies *sync.Map // 注册代理服务 key: func_id, value: []string{netid}
 	// proxyConn *sync.Map // 代理连接
 	//TODO 白名单/黑名单
 
@@ -350,28 +350,25 @@ func (s *Server) Stop() {
 	os.Exit(0)
 }
 
-func (s *Server) InitProxy() {
-	// s.proxy, s.proxyConn = &sync.Map{}, &sync.Map{}
-}
+func (s *Server) RegistProxy(name string, netID int64) error {
+	if s.proxies == nil {
+		s.proxies = &sync.Map{}
+	}
 
-func (s *Server) RegistProxy(name, host string) {
-	// if s.proxy == nil {
-	// 	return
-	// }
-	// val, ok := s.proxy.Load(name)
-	// if !ok {
-	// 	return
-	// }
+	val, ok := s.proxies.Load(name)
+	if !ok {
+		s.proxies.Store(name, []int64{netID})
+	}
 
-	// hosts := val.([]string)
-	// for _, h := range hosts {
-	// 	if h == host {
-	// 		return
-	// 	}
-	// }
-	// hosts = append(hosts, host)
-	// s.proxy.Store(name, hosts)
-	// 创建连接句柄
+	vals := val.([]int64)
+	for _, v := range vals {
+		if v == netID {
+			return nil
+		}
+	}
+	vals = append(vals, netID)
+	s.proxies.Store(name, vals)
+	return nil
 }
 
 // Retrieve the extra data(i.e. net id), and then redispatch timeout callbacks
