@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"time"
 	"unsafe"
+
+	mproto "git.ezbuy.me/ezbuy/evarmor/common/proto"
 )
 
 // ErrUndefined for undefined message type.
@@ -47,7 +49,7 @@ const (
 )
 
 type onConnectFunc func(WriteCloser) bool
-type onMessageFunc func(Message, WriteCloser)
+type onMessageFunc func(*mproto.XMessage, WriteCloser)
 type onCloseFunc func(WriteCloser)
 type onErrorFunc func(WriteCloser)
 

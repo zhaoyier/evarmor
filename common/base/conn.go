@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	mproto "git.ezbuy.me/ezbuy/evarmor/common/proto"
+	"git.ezbuy.me/ezbuy/evarmor/common/utils"
 	"github.com/leesper/holmes"
 )
 
@@ -21,13 +23,13 @@ const (
 
 // MessageHandler is a combination of message and its handler function.
 type MessageHandler struct {
-	message Message
-	handler HandlerFunc
+	message *mproto.XMessage
+	handler *handlerUnmarshaler
 }
 
 // WriteCloser is the interface that groups Write and Close methods.
 type WriteCloser interface {
-	Write(Message) error
+	Write(*mproto.XMessage) error
 	Close()
 }
 
@@ -202,7 +204,7 @@ func (sc *ServerConn) AddPendingTimer(timerID int64) {
 }
 
 // Write writes a message to the client.
-func (sc *ServerConn) Write(message Message) error {
+func (sc *ServerConn) Write(message *mproto.XMessage) error {
 	return asyncWrite(sc, message)
 }
 
@@ -441,7 +443,7 @@ func (cc *ClientConn) reconnect() {
 }
 
 // Write writes a message to the client.
-func (cc *ClientConn) Write(message Message) error {
+func (cc *ClientConn) Write(message *mproto.XMessage) error {
 	return asyncWrite(cc, message)
 }
 
@@ -512,7 +514,7 @@ func runEvery(ctx context.Context, netID int64, timing *TimingWheel, d time.Dura
 	return timing.AddTimer(delay, d, timeout)
 }
 
-func asyncWrite(c interface{}, m Message) (err error) {
+func asyncWrite(c interface{}, m *mproto.XMessage) (err error) {
 	defer func() {
 		if p := recover(); p != nil {
 			err = ErrServerClosed
@@ -558,7 +560,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 		setHeartBeatFunc func(int64)
 		onMessage        onMessageFunc
 		handlerCh        chan MessageHandler
-		msg              Message
+		msg              *mproto.XMessage
 		err              error
 	)
 
@@ -610,13 +612,14 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				return
 			}
 			setHeartBeatFunc(time.Now().UnixNano())
-			handler := GetHandlerFunc(msg.MessageNumber())
+			// msg.MessageNumber()
+			handler := GetHandlerFunc(utils.CRC32(msg.GetCode()))
 			if handler == nil {
 				if onMessage != nil {
-					holmes.Infof("message %d call onMessage()\n", msg.MessageNumber())
+					holmes.Infof("message %s call onMessage()\n", msg.GetCode())
 					onMessage(msg, c.(WriteCloser))
 				} else {
-					holmes.Warnf("no handler or onMessage() found for message %d\n", msg.MessageNumber())
+					holmes.Warnf("no handler or onMessage() found for message %s\n", msg.GetCode())
 				}
 				continue
 			}
@@ -752,7 +755,7 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 					}
 					addTotalHandle()
 				} else {
-					handler(NewContextWithNetID(NewContextWithMessage(ctx, msg), netID), c)
+					// handler(NewContextWithNetID(NewContextWithMessage(ctx, msg), netID), c)
 				}
 			}
 		case timeout := <-timerCh:

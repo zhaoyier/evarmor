@@ -7,14 +7,15 @@ import (
 	"os"
 
 	"github.com/leesper/holmes"
-	"github.com/leesper/tao"
+	// "github.com/leesper/tao"
+	tao "git.ezbuy.me/ezbuy/evarmor/common/base"
 	"github.com/leesper/tao/examples/chat"
 )
 
 func main() {
 	defer holmes.Start().Stop()
 
-	tao.Register(chat.ChatMessage, chat.DeserializeMessage, nil)
+	// tao.Register(chat.ChatMessage, chat.DeserializeMessage, nil)
 
 	c, err := net.Dial("tcp", "127.0.0.1:12345")
 	if err != nil {

@@ -42,6 +42,8 @@ type UnmarshalFunc func([]byte) (Message, error)
 // 	unmarshaler UnmarshalFunc
 // }
 
+// HandlerFunc
+
 type handlerUnmarshaler struct {
 	Method    reflect.Value
 	ParamType reflect.Type //XXXXRequest的实际类型
