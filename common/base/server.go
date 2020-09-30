@@ -1,4 +1,4 @@
-package tao
+package base
 
 import (
 	"context"
@@ -10,16 +10,20 @@ import (
 	"sync"
 	"time"
 
+	"git.ezbuy.me/ezbuy/evarmor/common/metcd"
 	"github.com/leesper/holmes"
 )
 
 func init() {
 	netIdentifier = NewAtomicInt64(0)
+	// TODO 配置文件
+	etcdSer, _ = metcd.NewServiceReg([]string{"127.0.0.1:2379"}, 5)
 }
 
 var (
 	netIdentifier *AtomicInt64
 	tlsWrapper    func(net.Conn) net.Conn
+	etcdSer       *metcd.ServiceReg
 )
 
 type options struct {
@@ -124,10 +128,12 @@ type Server struct {
 	mu     sync.Mutex // guards following
 	lis    map[net.Listener]bool
 	// for periodically running function every duration.
-	interv    time.Duration
-	sched     onScheduleFunc
-	proxy     *sync.Map // 注册代理服务
-	proxyConn *sync.Map // 代理连接
+	interv  time.Duration
+	sched   onScheduleFunc
+	proxies *sync.Map // 注册代理服务
+	// proxyConn *sync.Map // 代理连接
+	//TODO 白名单/黑名单
+
 }
 
 // NewServer returns a new TCP server which has not started
@@ -364,6 +370,7 @@ func (s *Server) RegistProxy(name, host string) {
 	}
 	hosts = append(hosts, host)
 	s.proxy.Store(name, hosts)
+	// 创建连接句柄
 }
 
 // Retrieve the extra data(i.e. net id), and then redispatch timeout callbacks

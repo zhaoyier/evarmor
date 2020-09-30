@@ -49,7 +49,6 @@ func (this *ClientDis) watcher(prefix string) {
 		for _, ev := range wresp.Events {
 			switch ev.Type {
 			case mvccpb.PUT:
-				fmt.Printf("====>>01:%+v\n", ev)
 				this.SetServiceList(string(ev.Kv.Key), string(ev.Kv.Value))
 			case mvccpb.DELETE:
 				this.DelServiceList(string(ev.Kv.Key))

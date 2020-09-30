@@ -33,7 +33,7 @@ func init() {
 			DisableColors: disableColor,
 			SortingFunc:   sortingLogger,
 		}
-		logrus.NewEntry(log)
+		logger = logrus.NewEntry(log)
 	})
 }
 

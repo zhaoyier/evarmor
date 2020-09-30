@@ -1,4 +1,4 @@
-package tao
+package base
 
 import (
 	"context"
@@ -30,6 +30,10 @@ var (
 	ErrBadData       = errors.New("more than 8M data")
 	ErrNotRegistered = errors.New("handler not registered")
 	ErrServerClosed  = errors.New("server has been closed")
+)
+
+var ( //注册服务
+	RegisterServiceHandler = "service/%s"
 )
 
 // definitions about some constants.

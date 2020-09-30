@@ -1,9 +1,10 @@
-package tao
+package base
 
 import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"net"
 	"reflect"
@@ -50,11 +51,11 @@ var (
 	buf *bytes.Buffer
 	// messageRegistry is the registry of all
 	// message-related unmarshal and handle functions.
-	messageRegistry map[int32]handlerUnmarshaler
+	messageRegistry map[int32]*handlerUnmarshaler
 )
 
 func init() {
-	messageRegistry = map[int32]handlerUnmarshaler{}
+	messageRegistry = map[int32]*handlerUnmarshaler{}
 	buf = new(bytes.Buffer)
 }
 
@@ -89,29 +90,40 @@ func RegisterServer(srv ServiceHandler) {
 		if _, ok := messageRegistry[msgType]; ok {
 			panic("duplicate register service:" + tf.Method(i).Name)
 		}
-		messageRegistry[msgType] = handlerUnmarshaler{
+		messageRegistry[msgType] = &handlerUnmarshaler{
 			Method:    v.Method(i),
 			ParamType: tf.Method(i).Type.In(2),
 		}
+		// TODO 利用etcd注册服务，注册地址信息
+		etcdSer.PutService(fmt.Sprintf(RegisterServiceHandler, name), "heiheihei")
 	}
 }
 
 // GetUnmarshalFunc returns the corresponding unmarshal function for msgType.
-func GetUnmarshalFunc(msgType int32) UnmarshalFunc {
-	entry, ok := messageRegistry[msgType]
-	if !ok {
-		return nil
-	}
-	return entry.unmarshaler
-}
+// func GetUnmarshalFunc(msgType int32) UnmarshalFunc {
+// 	entry, ok := messageRegistry[msgType]
+// 	if !ok {
+// 		return nil
+// 	}
+// 	return entry.unmarshaler
+// }
+
+// // GetHandlerFunc returns the corresponding handler function for msgType.
+// func GetHandlerFunc(msgType int32) HandlerFunc {
+// 	entry, ok := messageRegistry[msgType]
+// 	if !ok {
+// 		return nil
+// 	}
+// 	return entry.handler
+// }
 
 // GetHandlerFunc returns the corresponding handler function for msgType.
-func GetHandlerFunc(msgType int32) HandlerFunc {
+func GetHandlerFunc(msgType int32) *handlerUnmarshaler {
 	entry, ok := messageRegistry[msgType]
 	if !ok {
 		return nil
 	}
-	return entry.handler
+	return entry
 }
 
 // Message represents the structured data that can be handled.
