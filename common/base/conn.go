@@ -3,13 +3,16 @@ package base
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
+	"reflect"
 	"sync"
 	"time"
 
 	mproto "git.ezbuy.me/ezbuy/evarmor/common/proto"
 	"git.ezbuy.me/ezbuy/evarmor/common/utils"
 	"github.com/leesper/holmes"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -698,12 +701,12 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 // handleLoop() - put handler or timeout callback into worker go-routines
 func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 	var (
-		cDone        <-chan struct{}
-		sDone        <-chan struct{}
-		timerCh      chan *OnTimeOut
-		handlerCh    chan MessageHandler
-		netID        int64
-		ctx          context.Context
+		cDone     <-chan struct{}
+		sDone     <-chan struct{}
+		timerCh   chan *OnTimeOut
+		handlerCh chan MessageHandler
+		netID     int64
+		// ctx          context.Context
 		askForWorker bool
 		err          error
 	)
@@ -715,7 +718,7 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 		timerCh = c.timerCh
 		handlerCh = c.handlerCh
 		netID = c.netid
-		ctx = c.ctx
+		// ctx = c.ctx
 		askForWorker = true
 	case *ClientConn:
 		cDone = c.ctx.Done()
@@ -723,7 +726,7 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 		timerCh = c.timing.timeOutChan
 		handlerCh = c.handlerCh
 		netID = c.netid
-		ctx = c.ctx
+		// ctx = c.ctx
 	}
 
 	defer func() {
@@ -744,20 +747,30 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 			holmes.Debugln("receiving cancel signal from server")
 			return
 		case msgHandler := <-handlerCh:
-			msg, handler := msgHandler.message, msgHandler.handler
-			if handler != nil {
-				if askForWorker {
-					err = WorkerPoolInstance().Put(netID, func() {
-						handler(NewContextWithNetID(NewContextWithMessage(ctx, msg), netID), c)
-					})
-					if err != nil {
-						holmes.Errorln(err)
-					}
-					addTotalHandle()
-				} else {
-					// handler(NewContextWithNetID(NewContextWithMessage(ctx, msg), netID), c)
-				}
+			if askForWorker {
+				err = WorkerPoolInstance().Put(netID, func() {
+					asyncCall(c, msgHandler)
+				})
+			} else {
+				asyncCall(c, msgHandler)
 			}
+
+			addTotalHandle()
+
+			// msg, handler := msgHandler.message, msgHandler.handler
+			// if handler != nil {
+			// 	if askForWorker {
+			// 		err = WorkerPoolInstance().Put(netID, func() {
+			// 			handler(NewContextWithNetID(NewContextWithMessage(ctx, msg), netID), c)
+			// 		})
+			// 		if err != nil {
+			// 			holmes.Errorln(err)
+			// 		}
+			// 		addTotalHandle()
+			// 	} else {
+			// 		// handler(NewContextWithNetID(NewContextWithMessage(ctx, msg), netID), c)
+			// 	}
+			// }
 		case timeout := <-timerCh:
 			if timeout != nil {
 				timeoutNetID := NetIDFromContext(timeout.Ctx)
@@ -776,5 +789,37 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 				}
 			}
 		}
+	}
+}
+
+func asyncCall(wc WriteCloser, mh MessageHandler) error {
+	msg, handler := mh.message, mh.handler
+	ctx, cancel := context.WithTimeout(context.Background(), ContextTimeout)
+	defer cancel()
+	results, done := make([]reflect.Value, 0, 2), make(chan struct{}, 1)
+	req := reflect.New(handler.ParamType.Elem()).Interface().(proto.Message)
+	if err := proto.Unmarshal(msg.GetData(), req); err != nil {
+		return err
+	}
+	go func(ctx context.Context) {
+		results = handler.Method.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(req)})
+		done <- struct{}{}
+	}(ctx)
+
+	select {
+	case <-ctx.Done():
+		fmt.Println("ctx.done:", ctx.Err())
+		return ctx.Err()
+	case <-done:
+		if err := results[0].Interface(); err.(error) != nil {
+			return err.(error)
+		}
+
+		sc := wc.(*ServerConn)
+		resp := results[1].Interface().(proto.Message)
+		if resp, err := proto.Marshal(resp); err == nil {
+			return sc.Write(&mproto.XMessage{Data: resp}) //TODO 消息不完整
+		}
+		return nil
 	}
 }

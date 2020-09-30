@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"git.ezbuy.me/ezbuy/evarmor/common/metcd"
+	mproto "git.ezbuy.me/ezbuy/evarmor/common/proto"
 	"github.com/leesper/holmes"
 )
 
@@ -89,7 +90,7 @@ func OnConnectOption(cb func(WriteCloser) bool) ServerOption {
 
 // OnMessageOption returns a ServerOption that will set callback to call when new
 // message arrived.
-func OnMessageOption(cb func(Message, WriteCloser)) ServerOption {
+func OnMessageOption(cb func(*mproto.XMessage, WriteCloser)) ServerOption {
 	return func(o *options) {
 		o.onMessage = cb
 	}
@@ -187,7 +188,7 @@ func (s *Server) Sched(dur time.Duration, sched func(time.Time, WriteCloser)) {
 }
 
 // Broadcast broadcasts message to all server connections managed.
-func (s *Server) Broadcast(msg Message) {
+func (s *Server) Broadcast(msg *mproto.XMessage) {
 	s.conns.Range(func(k, v interface{}) bool {
 		c := v.(*ServerConn)
 		if err := c.Write(msg); err != nil {
@@ -199,7 +200,7 @@ func (s *Server) Broadcast(msg Message) {
 }
 
 // Unicast unicasts message to a specified conn.
-func (s *Server) Unicast(id int64, msg Message) error {
+func (s *Server) Unicast(id int64, msg *mproto.XMessage) error {
 	v, ok := s.conns.Load(id)
 	if ok {
 		return v.(*ServerConn).Write(msg)
@@ -350,26 +351,26 @@ func (s *Server) Stop() {
 }
 
 func (s *Server) InitProxy() {
-	s.proxy, s.proxyConn = &sync.Map{}, &sync.Map{}
+	// s.proxy, s.proxyConn = &sync.Map{}, &sync.Map{}
 }
 
 func (s *Server) RegistProxy(name, host string) {
-	if s.proxy == nil {
-		return
-	}
-	val, ok := s.proxy.Load(name)
-	if !ok {
-		return
-	}
+	// if s.proxy == nil {
+	// 	return
+	// }
+	// val, ok := s.proxy.Load(name)
+	// if !ok {
+	// 	return
+	// }
 
-	hosts := val.([]string)
-	for _, h := range hosts {
-		if h == host {
-			return
-		}
-	}
-	hosts = append(hosts, host)
-	s.proxy.Store(name, hosts)
+	// hosts := val.([]string)
+	// for _, h := range hosts {
+	// 	if h == host {
+	// 		return
+	// 	}
+	// }
+	// hosts = append(hosts, host)
+	// s.proxy.Store(name, hosts)
 	// 创建连接句柄
 }
 

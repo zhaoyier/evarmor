@@ -46,6 +46,7 @@ const (
 	BufferSize512     = 512
 	BufferSize1024    = 1024
 	defaultWorkersNum = 20
+	ContextTimeout    = 10 * time.Second
 )
 
 type onConnectFunc func(WriteCloser) bool
