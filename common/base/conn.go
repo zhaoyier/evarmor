@@ -54,6 +54,7 @@ type ServerConn struct {
 	pending []int64
 	ctx     context.Context
 	cancel  context.CancelFunc
+	Source  int32
 }
 
 // NewServerConn returns a new server connection which has not started to

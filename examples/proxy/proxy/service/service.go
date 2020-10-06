@@ -3,7 +3,9 @@ package service
 import (
 	"git.ezbuy.me/ezbuy/evarmor/common/base"
 	mproto "git.ezbuy.me/ezbuy/evarmor/common/proto"
+
 	// lproto "git.ezbuy.me/ezbuy/evarmor/common/proto"
+	"git.ezbuy.me/ezbuy/evarmor/common/log"
 )
 
 // ProxyServer is the proxy server.
@@ -29,22 +31,50 @@ func NewProxyServer() *ProxyServer {
 		switch msg.GetCode() {
 		case base.InternalRegisterHandler: //注册逻辑服务接口
 			internalRegisterHandler(msg.GetData(), conn)
+		default:
+			proxyMessage(msg, conn)
 		}
 	})
+
+	// etcd 通知其他服务有注册
 	return &ProxyServer{
 		base.NewServer(onConnectOption, onErrorOption, onCloseOption, onMessageOption),
 	}
 }
 
 func internalRegisterHandler(data []byte, conn base.WriteCloser) error {
+	name := string(data)
 	sc := conn.(*base.ServerConn)
-	// var handler *mproto.RegisterHandler
-	// if err := proto.Unmarshal(data, handler); err != nil {
-	// 	log.Errorf("proto unmarshal failed: %+v", err)
-	// 	return err
-	// }
+
 	// 注册代理服务接口
-	sc.Belong().RegistProxy("handler.GetName()", sc.NetID())
-	// sc.belong.RegistProxy(handler.GetName(), sc.NetID())
+	sc.Belong().RegistProxy(name, sc.NetID())
 	return nil
+}
+
+func proxyMessage(msg *mproto.XMessage, conn base.WriteCloser) {
+	// 根据名称获取逻辑服务连接句柄
+	sc := conn.(*base.ServerConn)
+
+	if msg.GetNetid() == 0 { //来自用户端
+		conn, err := sc.Belong().GetProxyConn(msg.GetCode(), sc.NetID())
+		if err != nil {
+			//TODO
+			log.Errorf("get proxy conn failed: %q", err)
+			return
+		}
+
+		msg.Netid = sc.NetID()
+		if err := conn.Write(msg); err != nil {
+			log.Errorf("proxy write to server failed: %q", err)
+			return
+		}
+	}
+	// 来自服务端
+	if cn, ok := sc.Belong().Conn(msg.GetNetid()); ok {
+		msg.Netid = 0
+		if err := cn.Write(msg); err != nil {
+			log.Errorf("proxy write client failed: %q", err)
+			return
+		}
+	}
 }

@@ -54,6 +54,14 @@ const (
 	InternalRegisterHandler = "internal_register_handler"
 )
 
+// 请求/消息来源
+const {
+	MessageSourceClient = 100
+	MessageSourceProxy = 200
+
+}
+
+
 type onConnectFunc func(WriteCloser) bool
 type onMessageFunc func(*mproto.XMessage, WriteCloser)
 type onCloseFunc func(WriteCloser)

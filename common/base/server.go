@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -355,6 +356,10 @@ func (s *Server) RegistProxy(name string, netID int64) error {
 		s.proxies = &sync.Map{}
 	}
 
+	if _, ok := s.conns.Load(netID); !ok {
+		return errors.New("invalid net id")
+	}
+
 	val, ok := s.proxies.Load(name)
 	if !ok {
 		s.proxies.Store(name, []int64{netID})
@@ -369,6 +374,20 @@ func (s *Server) RegistProxy(name string, netID int64) error {
 	vals = append(vals, netID)
 	s.proxies.Store(name, vals)
 	return nil
+}
+
+func (s *Server) GetProxyConn(name string, netID int64) (*ServerConn, error) {
+	val, ok := s.proxies.Load(name)
+	if !ok {
+		return nil, fmt.Errorf("name: %s is empty", name)
+	}
+	servers := val.([]int64)
+	scId := servers[int(netID)%len(servers)]
+	if v, ok := s.conns.Load(scId); ok {
+		return v.(*ServerConn), nil
+	} else {
+		return nil, fmt.Errorf("invalid name:%s of connect", name)
+	}
 }
 
 // Retrieve the extra data(i.e. net id), and then redispatch timeout callbacks

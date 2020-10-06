@@ -7,7 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"git.ezbuy.me/ezbuy/evarmor/examples/proxy/service"
+	// "git.ezbuy.me/ezbuy/evarmor/examples/proxy/service"
+	"git.ezbuy.me/ezbuy/evarmor/examples/proxy/proxy/service"
 )
 
 func main() {
@@ -26,7 +27,6 @@ func main() {
 		<-c
 		proxyServer.Stop()
 	}()
-	// service.Beacon([]string{})
 
 	proxyServer.Start(l)
 }
