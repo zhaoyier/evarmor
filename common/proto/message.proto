@@ -7,7 +7,7 @@ message CMessage {
 }
 
 message XMessage {
-	string code = 1;
+	int64 code = 1;
 	bytes data = 2;
 	int64 netid = 3;
 }

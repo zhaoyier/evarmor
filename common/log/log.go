@@ -15,6 +15,8 @@ var logger *logrus.Entry
 var initLogrusOnce sync.Once
 
 func init() {
+	fmt.Println("log init")
+
 	initLogrusOnce.Do(func() {
 		log := logrus.New()
 		// 为当前logrus实例设置消息的输出,同样地,
@@ -28,12 +30,14 @@ func init() {
 		// 同样地,也可以单独为某个logrus实例设置日志级别和hook,这里不详细叙述.
 		// log.Formatter = &logrus.JSONFormatter{}
 		// 设置日志等级
-		log.SetLevel(logrus.WarnLevel)
+		log.SetLevel(logrus.InfoLevel)
 		log.Formatter = &logrus.TextFormatter{
 			DisableColors: disableColor,
 			SortingFunc:   sortingLogger,
 		}
 		logger = logrus.NewEntry(log)
+		fmt.Println("log init end")
+
 	})
 }
 

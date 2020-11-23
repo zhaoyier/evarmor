@@ -17,6 +17,8 @@ var (
 )
 
 func init() {
+	fmt.Println("message metics")
+
 	handleExported = expvar.NewInt("TotalHandle")
 	connExported = expvar.NewInt("TotalConn")
 	timeExported = expvar.NewFloat("TotalTime")

@@ -17,9 +17,13 @@ import (
 )
 
 func init() {
+	fmt.Println("server init")
+
 	netIdentifier = NewAtomicInt64(0)
 	// TODO 配置文件
-	etcdSer, _ = metcd.NewServiceReg([]string{"127.0.0.1:2379"}, 5)
+	// etcdSer, _ = metcd.NewServiceReg([]string{"127.0.0.1:2379"}, 5)
+	fmt.Println("server init end")
+
 }
 
 var (
@@ -92,6 +96,7 @@ func OnConnectOption(cb func(WriteCloser) bool) ServerOption {
 // OnMessageOption returns a ServerOption that will set callback to call when new
 // message arrived.
 func OnMessageOption(cb func(*mproto.XMessage, WriteCloser)) ServerOption {
+	fmt.Printf("=======>>999:%+v\n", nil)
 	return func(o *options) {
 		o.onMessage = cb
 	}
@@ -223,6 +228,7 @@ func (s *Server) Conn(id int64) (*ServerConn, bool) {
 // the registered handlers to handle them. Start returns when failed with fatal
 // errors, the listener willl be closed when returned.
 func (s *Server) Start(l net.Listener) error {
+	fmt.Println("start listen")
 	s.mu.Lock()
 	if s.lis == nil {
 		s.mu.Unlock()
@@ -249,6 +255,7 @@ func (s *Server) Start(l net.Listener) error {
 	var tempDelay time.Duration
 	for {
 		rawConn, err := l.Accept()
+		fmt.Println("start accept")
 		if err != nil {
 			if ne, ok := err.(net.Error); ok && ne.Temporary() {
 				if tempDelay == 0 {
@@ -269,7 +276,7 @@ func (s *Server) Start(l net.Listener) error {
 			return err
 		}
 		tempDelay = 0
-
+		fmt.Println("start accept 02")
 		// how many connections do we have ?
 		sz := s.ConnsSize()
 		if sz >= MaxConnections {
@@ -285,6 +292,7 @@ func (s *Server) Start(l net.Listener) error {
 		netid := netIdentifier.GetAndIncrement()
 		sc := NewServerConn(netid, s, rawConn)
 		sc.SetName(sc.rawConn.RemoteAddr().String())
+		fmt.Println("start accept 03: ", netid, "|", sc.rawConn.RemoteAddr().String())
 
 		s.mu.Lock()
 		if s.sched != nil {
@@ -351,7 +359,7 @@ func (s *Server) Stop() {
 	os.Exit(0)
 }
 
-func (s *Server) RegistProxy(name string, netID int64) error {
+func (s *Server) RegistProxy(name, netID int64) error {
 	if s.proxies == nil {
 		s.proxies = &sync.Map{}
 	}
@@ -376,7 +384,7 @@ func (s *Server) RegistProxy(name string, netID int64) error {
 	return nil
 }
 
-func (s *Server) GetProxyConn(name string, netID int64) (*ServerConn, error) {
+func (s *Server) GetProxyConn(name, netID int64) (*ServerConn, error) {
 	val, ok := s.proxies.Load(name)
 	if !ok {
 		return nil, fmt.Errorf("name: %s is empty", name)

@@ -9,15 +9,15 @@ import (
 	"sync"
 	"time"
 
+	"git.ezbuy.me/ezbuy/evarmor/common/log"
 	mproto "git.ezbuy.me/ezbuy/evarmor/common/proto"
-	"git.ezbuy.me/ezbuy/evarmor/common/utils"
 	"github.com/leesper/holmes"
 	"google.golang.org/protobuf/proto"
 )
 
 const (
 	// MessageTypeBytes is the length of type header.
-	MessageTypeBytes = 4
+	MessageTypeBytes = 8
 	// MessageLenBytes is the length of length header.
 	MessageLenBytes = 4
 	// MessageMaxBytes is the maximum bytes allowed for application data.
@@ -140,7 +140,8 @@ func (sc *ServerConn) ContextValue(k interface{}) interface{} {
 // Start starts the server connection, creating go-routines for reading,
 // writing and handlng.
 func (sc *ServerConn) Start() {
-	holmes.Infof("conn start, <%v -> %v>\n", sc.rawConn.LocalAddr(), sc.rawConn.RemoteAddr())
+	// holmes.Infof("conn start, <%v -> %v>\n", sc.rawConn.LocalAddr(), sc.rawConn.RemoteAddr())
+	fmt.Println(" server conn start:", sc.rawConn.LocalAddr(), "|", sc.rawConn.RemoteAddr())
 	onConnect := sc.belong.opts.onConnect
 	if onConnect != nil {
 		onConnect(sc)
@@ -526,6 +527,7 @@ func runEvery(ctx context.Context, netID int64, timing *TimingWheel, d time.Dura
 func asyncWrite(c interface{}, m *mproto.XMessage) (err error) {
 	defer func() {
 		if p := recover(); p != nil {
+			fmt.Printf("async write recover: %q\n", p)
 			err = ErrServerClosed
 		}
 	}()
@@ -561,6 +563,7 @@ func asyncWrite(c interface{}, m *mproto.XMessage) (err error) {
 /* readLoop() blocking read from connection, deserialize bytes into message,
 then find corresponding handler, put it into channel */
 func readLoop(c WriteCloser, wg *sync.WaitGroup) {
+	fmt.Println("read loop start")
 	var (
 		rawConn          net.Conn
 		codec            Codec
@@ -575,6 +578,8 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 
 	switch c := c.(type) {
 	case *ServerConn:
+		fmt.Println("read loop server conn")
+
 		rawConn = c.rawConn
 		codec = c.belong.opts.codec
 		cDone = c.ctx.Done()
@@ -583,6 +588,8 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 		onMessage = c.belong.opts.onMessage
 		handlerCh = c.handlerCh
 	case *ClientConn:
+		fmt.Println("read loop client conn")
+
 		rawConn = c.rawConn
 		codec = c.opts.codec
 		cDone = c.ctx.Done()
@@ -594,25 +601,35 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 
 	defer func() {
 		if p := recover(); p != nil {
-			holmes.Errorf("panics: %v\n", p)
+			log.Errorf("panics 01: %v\n", p)
 		}
+		fmt.Println("read loop 011")
+
 		wg.Done()
-		holmes.Debugln("readLoop go-routine exited")
+		log.Infof("readLoop go-routine exited")
 		c.Close()
 	}()
+	fmt.Println("read loop 02")
 
 	for {
 		select {
 		case <-cDone: // connection closed
-			holmes.Debugln("receiving cancel signal from conn")
+			fmt.Println("read loop 03")
+
+			log.Infof("receiving cancel signal from conn")
 			return
 		case <-sDone: // server closed
-			holmes.Debugln("receiving cancel signal from server")
+			fmt.Println("read loop 04")
+
+			log.Infof("receiving cancel signal from server")
 			return
 		default:
+
 			msg, err = codec.Decode(rawConn)
+			fmt.Printf("read loop 05:%+v|%+v\n", msg, err)
+
 			if err != nil {
-				holmes.Errorf("error decoding message %v\n", err)
+				log.Errorf("error decoding message %v\n", err)
 				if _, ok := err.(ErrUndefined); ok {
 					// update heart beats
 					setHeartBeatFunc(time.Now().UnixNano())
@@ -620,15 +637,23 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				}
 				return
 			}
+
+			fmt.Printf("read loop message: %+v\n", msg)
 			setHeartBeatFunc(time.Now().UnixNano())
 			// msg.MessageNumber()
-			handler := GetHandlerFunc(utils.CRC32(msg.GetCode()))
+			handler := GetHandlerFunc(msg.GetCode())
+			fmt.Printf("read loop 06: %+v|%+v\n", handler == nil, onMessage)
+
 			if handler == nil {
+				fmt.Println("read loop 07")
+
 				if onMessage != nil {
-					holmes.Infof("message %s call onMessage()\n", msg.GetCode())
+					fmt.Printf("read loop 08:%+v\n", msg.GetCode())
+
+					log.Infof("---->>>message %s call onMessage()\n", msg.GetCode())
 					onMessage(msg, c.(WriteCloser))
 				} else {
-					holmes.Warnf("no handler or onMessage() found for message %s\n", msg.GetCode())
+					log.Warnf("no handler or onMessage() found for message %s\n", msg.GetCode())
 				}
 				continue
 			}
@@ -664,13 +689,14 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 
 	defer func() {
 		if p := recover(); p != nil {
-			holmes.Errorf("panics: %v\n", p)
+			log.Errorf("panics 02: %v\n", p)
 		}
 		// drain all pending messages before exit
 	OuterFor:
 		for {
 			select {
 			case pkt = <-sendCh:
+				fmt.Printf("write loop: %+v\n", pkt)
 				if pkt != nil {
 					if _, err = rawConn.Write(pkt); err != nil {
 						holmes.Errorf("error writing data %v\n", err)
@@ -737,7 +763,7 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 
 	defer func() {
 		if p := recover(); p != nil {
-			holmes.Errorf("panics: %v\n", p)
+			holmes.Errorf("panics 03: %v\n", p)
 		}
 		wg.Done()
 		holmes.Debugln("handleLoop go-routine exited")

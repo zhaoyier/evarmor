@@ -3,6 +3,7 @@ package service
 import (
 	"git.ezbuy.me/ezbuy/evarmor/common/base"
 	mproto "git.ezbuy.me/ezbuy/evarmor/common/proto"
+	"git.ezbuy.me/ezbuy/evarmor/common/utils"
 
 	// lproto "git.ezbuy.me/ezbuy/evarmor/common/proto"
 	"git.ezbuy.me/ezbuy/evarmor/common/log"
@@ -17,23 +18,29 @@ type ProxyServer struct {
 func NewProxyServer() *ProxyServer {
 	onConnectOption := base.OnConnectOption(func(conn base.WriteCloser) bool {
 		// holmes.Infoln("on connect")
+		log.Infof("option on connect")
 		return true
 	})
 	onErrorOption := base.OnErrorOption(func(conn base.WriteCloser) {
+		log.Infof("option on error")
+
 		// holmes.Infoln("on error")
 	})
 	onCloseOption := base.OnCloseOption(func(conn base.WriteCloser) {
 		// holmes.Infoln("close chat client")
+		log.Infof("option on close")
+
 	})
 
 	onMessageOption := base.OnMessageOption(func(msg *mproto.XMessage, conn base.WriteCloser) {
+		log.Infof("option on message: %+v", msg)
 		// holmes.Infoln("close chat client")
-		switch msg.GetCode() {
-		case base.InternalRegisterHandler: //注册逻辑服务接口
-			internalRegisterHandler(msg.GetData(), conn)
-		default:
-			proxyMessage(msg, conn)
-		}
+		// switch msg.GetCode() {
+		// case utils.CRC32(base.InternalRegisterHandler): //注册逻辑服务接口
+		// 	internalRegisterHandler(msg.GetData(), conn)
+		// default:
+		// 	proxyMessage(msg, conn)
+		// }
 	})
 
 	// etcd 通知其他服务有注册
@@ -47,7 +54,7 @@ func internalRegisterHandler(data []byte, conn base.WriteCloser) error {
 	sc := conn.(*base.ServerConn)
 
 	// 注册代理服务接口
-	sc.Belong().RegistProxy(name, sc.NetID())
+	sc.Belong().RegistProxy(utils.CRC32(name), sc.NetID())
 	return nil
 }
 

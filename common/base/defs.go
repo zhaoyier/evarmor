@@ -55,12 +55,10 @@ const (
 )
 
 // 请求/消息来源
-const {
+const (
 	MessageSourceClient = 100
-	MessageSourceProxy = 200
-
-}
-
+	MessageSourceProxy  = 200
+)
 
 type onConnectFunc func(WriteCloser) bool
 type onMessageFunc func(*mproto.XMessage, WriteCloser)

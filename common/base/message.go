@@ -11,7 +11,6 @@ import (
 
 	mproto "git.ezbuy.me/ezbuy/evarmor/common/proto"
 	"git.ezbuy.me/ezbuy/evarmor/common/utils"
-	"github.com/golang/protobuf/proto"
 	"github.com/leesper/holmes"
 )
 
@@ -53,11 +52,12 @@ var (
 	buf *bytes.Buffer
 	// messageRegistry is the registry of all
 	// message-related unmarshal and handle functions.
-	messageRegistry map[int32]*handlerUnmarshaler
+	messageRegistry map[int64]*handlerUnmarshaler
 )
 
 func init() {
-	messageRegistry = map[int32]*handlerUnmarshaler{}
+	fmt.Println("message init")
+	messageRegistry = map[int64]*handlerUnmarshaler{}
 	buf = new(bytes.Buffer)
 }
 
@@ -120,7 +120,7 @@ func RegisterServer(srv ServiceHandler) {
 // }
 
 // GetHandlerFunc returns the corresponding handler function for msgType.
-func GetHandlerFunc(msgType int32) *handlerUnmarshaler {
+func GetHandlerFunc(msgType int64) *handlerUnmarshaler {
 	entry, ok := messageRegistry[msgType]
 	if !ok {
 		return nil
@@ -211,20 +211,27 @@ func (codec TypeLengthValueCodec) Decode(raw net.Conn) (*mproto.XMessage, error)
 
 	var typeBytes []byte
 
+	fmt.Println("decode 01:")
+
 	select {
 	case err := <-errorChan:
+		fmt.Println("decode 01:", err.Error())
+
 		return nil, err
 
 	case typeBytes = <-byteChan:
+		fmt.Println("decode 02:", string(typeBytes))
+
 		if typeBytes == nil {
 			holmes.Warnln("read type bytes nil")
 			return nil, ErrBadData
 		}
 		typeBuf := bytes.NewReader(typeBytes)
-		var msgType int32
+		var msgType int64
 		if err := binary.Read(typeBuf, binary.LittleEndian, &msgType); err != nil {
 			return nil, err
 		}
+		fmt.Println("decode 03:", msgType)
 
 		lengthBytes := make([]byte, MessageLenBytes)
 		_, err := io.ReadFull(raw, lengthBytes)
@@ -236,6 +243,8 @@ func (codec TypeLengthValueCodec) Decode(raw net.Conn) (*mproto.XMessage, error)
 		if err = binary.Read(lengthBuf, binary.LittleEndian, &msgLen); err != nil {
 			return nil, err
 		}
+		fmt.Println("decode 04:", msgLen)
+
 		if msgLen > MessageMaxBytes {
 			holmes.Errorf("message(type %d) has bytes(%d) beyond max %d\n", msgType, msgLen, MessageMaxBytes)
 			return nil, ErrBadData
@@ -247,27 +256,36 @@ func (codec TypeLengthValueCodec) Decode(raw net.Conn) (*mproto.XMessage, error)
 		if err != nil {
 			return nil, err
 		}
+		fmt.Printf("decode 05:%+v|%+v\n", string(msgBytes), msgBytes)
 
-		var msg *mproto.XMessage
-		if err := proto.Unmarshal(msgBytes, msg); err != nil {
-			return nil, err
-		}
+		// var msg *mproto.XMessage
+		// if err := proto.Unmarshal(msgBytes, msg); err != nil {
+		// 	fmt.Printf("decode 06:%+v\n", err.Error())
 
-		return msg, nil
+		// 	log.Errorf("proto unmarshal failed: %q", err)
+		// 	return nil, err
+		// } else {
+		// 	fmt.Printf("decode 07:%+v\n", msg)
+		// }
+
+		return &mproto.XMessage{
+			Code: msgType,
+			Data: msgBytes,
+		}, nil
 	}
 }
 
 // Encode encodes the message into bytes data.
 func (codec TypeLengthValueCodec) Encode(msg *mproto.XMessage) ([]byte, error) {
-	data, err := proto.Marshal(msg)
-	if err != nil {
-		return nil, err
-	}
+	// data, err := proto.Marshal(msg)
+	// if err != nil {
+	// 	return nil, err
+	// }
 	buf := new(bytes.Buffer)
-
-	binary.Write(buf, binary.LittleEndian, utils.CRC32(msg.GetCode()))
-	binary.Write(buf, binary.LittleEndian, int32(len(data)))
-	buf.Write(data)
+	fmt.Printf("encode message: %+v|%+v|%+v|%+v\n", msg.GetCode(), msg.GetCode(), nil, nil)
+	binary.Write(buf, binary.LittleEndian, msg.GetCode())
+	binary.Write(buf, binary.LittleEndian, int32(len(msg.GetData())))
+	buf.Write(msg.GetData())
 	packet := buf.Bytes()
 	return packet, nil
 }

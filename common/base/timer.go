@@ -3,6 +3,7 @@ package base
 import (
 	"container/heap"
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -17,7 +18,11 @@ const (
 var timerIds *AtomicInt64
 
 func init() {
+	fmt.Println("timer init")
+
 	timerIds = NewAtomicInt64(0)
+	fmt.Println("timer init end")
+
 }
 
 // timerHeap is a heap-based priority queue
