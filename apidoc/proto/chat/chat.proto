@@ -1,0 +1,17 @@
+syntax = "proto3";
+package chat;
+
+// service Chat {
+//    rpc SayHello(SayHelloReq) returns (SayHelloResp);
+// }
+
+message SayHelloReq {
+    string request = 1;
+}
+
+message SayHelloResp {
+    string response = 1;
+}
+
+
+

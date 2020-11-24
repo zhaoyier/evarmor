@@ -8,6 +8,8 @@ import (
 	"io"
 	"net"
 
+	"encoding/json"
+
 	"github.com/leesper/holmes"
 )
 
@@ -66,6 +68,10 @@ func Register(msgType int32, unmarshaler func([]byte) (Message, error), handler 
 	}
 }
 
+func Register2() { //
+
+}
+
 // GetUnmarshalFunc returns the corresponding unmarshal function for msgType.
 func GetUnmarshalFunc(msgType int32) UnmarshalFunc {
 	entry, ok := messageRegistry[msgType]
@@ -88,6 +94,13 @@ func GetHandlerFunc(msgType int32) HandlerFunc {
 type Message interface {
 	MessageNumber() int32
 	Serialize() ([]byte, error)
+}
+
+type XMessage struct {
+	Id     int64  `json: "id"`    //代理服务生成的连接ID
+	Client string `json:"client"` //用户端唯一标识
+	Invoke string `json:"invoke"` //接口hash值
+	Data   []byte `json:"data"`   //消息体
 }
 
 // HeartBeatMessage for application-level keeping alive.
@@ -256,4 +269,22 @@ func NewContextWithNetID(ctx context.Context, netID int64) context.Context {
 // NetIDFromContext returns a net ID from a Context.
 func NetIDFromContext(ctx context.Context) int64 {
 	return ctx.Value(netIDCtx).(int64)
+}
+
+func (xm XMessage) MessageNumber() int32 {
+	return 1
+}
+
+// MessageNumber returns the message number.
+func (xm XMessage) MessageNumber() int32 {
+	return 1
+}
+
+// Serialize Serializes Message into bytes.
+func (xm XMessage) Serialize() ([]byte, error) {
+	return json.Marshal(xm)
+}
+
+func Dispatch(handler func(context.Context, WriteCloser)) {
+
 }

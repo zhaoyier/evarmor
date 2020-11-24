@@ -22,59 +22,68 @@ var _ = strings.TrimPrefix
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-type DispatchMessage struct {
+type XMessage struct {
 	//
-	Client string `protobuf:"bytes,1,opt,name=client,proto3" json:"client"`
+	Id int64 `protobuf:"varint,1,opt,name=id,proto3" json:"id"`
 	//
-	Invoke string `protobuf:"bytes,2,opt,name=invoke,proto3" json:"invoke"`
+	Client string `protobuf:"bytes,2,opt,name=client,proto3" json:"client"`
 	//
-	Data []byte `protobuf:"bytes,3,opt,name=data,proto3" json:"data"`
+	Invoke string `protobuf:"bytes,3,opt,name=invoke,proto3" json:"invoke"`
+	//
+	Data []byte `protobuf:"bytes,4,opt,name=data,proto3" json:"data"`
 }
 
-func (m *DispatchMessage) Validate() error {
+func (m *XMessage) Validate() error {
 	return nil
 }
 
-func (m *DispatchMessage) Reset()         { *m = DispatchMessage{} }
-func (m *DispatchMessage) String() string { return proto.CompactTextString(m) }
-func (*DispatchMessage) ProtoMessage()    {}
-func (*DispatchMessage) Descriptor() ([]byte, []int) {
+func (m *XMessage) Reset()         { *m = XMessage{} }
+func (m *XMessage) String() string { return proto.CompactTextString(m) }
+func (*XMessage) ProtoMessage()    {}
+func (*XMessage) Descriptor() ([]byte, []int) {
 	return fileDescriptor_856864ca6250a18a, []int{0}
 }
 
-func (m *DispatchMessage) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_DispatchMessage.Unmarshal(m, b)
+func (m *XMessage) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_XMessage.Unmarshal(m, b)
 }
-func (m *DispatchMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_DispatchMessage.Marshal(b, m, deterministic)
+func (m *XMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_XMessage.Marshal(b, m, deterministic)
 }
-func (m *DispatchMessage) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DispatchMessage.Merge(m, src)
+func (m *XMessage) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_XMessage.Merge(m, src)
 }
-func (m *DispatchMessage) XXX_Size() int {
-	return xxx_messageInfo_DispatchMessage.Size(m)
+func (m *XMessage) XXX_Size() int {
+	return xxx_messageInfo_XMessage.Size(m)
 }
-func (m *DispatchMessage) XXX_DiscardUnknown() {
-	xxx_messageInfo_DispatchMessage.DiscardUnknown(m)
+func (m *XMessage) XXX_DiscardUnknown() {
+	xxx_messageInfo_XMessage.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_DispatchMessage proto.InternalMessageInfo
+var xxx_messageInfo_XMessage proto.InternalMessageInfo
 
-func (m *DispatchMessage) GetClient() string {
+func (m *XMessage) GetId() int64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *XMessage) GetClient() string {
 	if m != nil {
 		return m.Client
 	}
 	return ""
 }
 
-func (m *DispatchMessage) GetInvoke() string {
+func (m *XMessage) GetInvoke() string {
 	if m != nil {
 		return m.Invoke
 	}
 	return ""
 }
 
-func (m *DispatchMessage) GetData() []byte {
+func (m *XMessage) GetData() []byte {
 	if m != nil {
 		return m.Data
 	}
@@ -82,19 +91,19 @@ func (m *DispatchMessage) GetData() []byte {
 }
 
 func init() {
-	proto.RegisterType((*DispatchMessage)(nil), "common.DispatchMessage")
+	proto.RegisterType((*XMessage)(nil), "common.XMessage")
 }
 
 func init() { proto.RegisterFile("proto/common/common.proto", fileDescriptor_856864ca6250a18a) }
 
 var fileDescriptor_856864ca6250a18a = []byte{
-	// 119 bytes of a gzipped FileDescriptorProto
+	// 128 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x04, 0x03, 0x02, 0x01, 0x02, 0xff, 0xe2, 0x92, 0x2c, 0x28, 0xca, 0x2f,
 	0xc9, 0xd7, 0x4f, 0xce, 0xcf, 0xcd, 0xcd, 0xcf, 0x83, 0x52, 0x7a, 0x60, 0x31, 0x21, 0x36, 0x08,
-	0x4f, 0x29, 0x94, 0x8b, 0xdf, 0x25, 0xb3, 0xb8, 0x20, 0xb1, 0x24, 0x39, 0xc3, 0x37, 0xb5, 0xb8,
-	0x38, 0x31, 0x3d, 0x55, 0x48, 0x8c, 0x8b, 0x2d, 0x39, 0x27, 0x33, 0x35, 0xaf, 0x44, 0x82, 0x51,
-	0x81, 0x51, 0x83, 0x33, 0x08, 0xca, 0x03, 0x89, 0x67, 0xe6, 0x95, 0xe5, 0x67, 0xa7, 0x4a, 0x30,
-	0x41, 0xc4, 0x21, 0x3c, 0x21, 0x21, 0x2e, 0x96, 0x94, 0xc4, 0x92, 0x44, 0x09, 0x66, 0x05, 0x46,
-	0x0d, 0x9e, 0x20, 0x30, 0x3b, 0x89, 0x0d, 0x6c, 0x8b, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0x0b,
-	0x54, 0xc9, 0x09, 0x82, 0x00, 0x00, 0x00,
+	0x4f, 0x29, 0x8e, 0x8b, 0x23, 0xc2, 0x37, 0xb5, 0xb8, 0x38, 0x31, 0x3d, 0x55, 0x88, 0x8f, 0x8b,
+	0x29, 0x33, 0x45, 0x82, 0x51, 0x81, 0x51, 0x83, 0x39, 0x88, 0x29, 0x33, 0x45, 0x48, 0x8c, 0x8b,
+	0x2d, 0x39, 0x27, 0x33, 0x35, 0xaf, 0x44, 0x82, 0x49, 0x81, 0x51, 0x83, 0x33, 0x08, 0xca, 0x03,
+	0x89, 0x67, 0xe6, 0x95, 0xe5, 0x67, 0xa7, 0x4a, 0x30, 0x43, 0xc4, 0x21, 0x3c, 0x21, 0x21, 0x2e,
+	0x96, 0x94, 0xc4, 0x92, 0x44, 0x09, 0x16, 0x05, 0x46, 0x0d, 0x9e, 0x20, 0x30, 0x3b, 0x89, 0x0d,
+	0x6c, 0x9d, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0xaa, 0x25, 0xc7, 0xfa, 0x8b, 0x00, 0x00, 0x00,
 }

@@ -39,6 +39,8 @@ func main() {
 
 	tao.Register(chat.ChatMessage, chat.DeserializeMessage, chat.ProcessMessage)
 
+	tao.Dispatch(chat.ProcessMessage)
+
 	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", "0.0.0.0", 12345))
 	if err != nil {
 		holmes.Fatalln("listen error", err)
