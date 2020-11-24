@@ -3,8 +3,8 @@ package chat
 import (
 	"context"
 
+	tao "git.ezbuy.me/ezbuy/evarmor/common/base"
 	"github.com/leesper/holmes"
-	"github.com/leesper/tao"
 )
 
 const (

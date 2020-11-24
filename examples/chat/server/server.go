@@ -7,9 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	tao "git.ezbuy.me/ezbuy/evarmor/common/base"
+	"git.ezbuy.me/ezbuy/evarmor/examples/chat"
 	"github.com/leesper/holmes"
-	"github.com/leesper/tao"
-	"github.com/leesper/tao/examples/chat"
 )
 
 // ChatServer is the chatting server.

@@ -1,0 +1,8 @@
+syntax = "proto3";
+package common;
+
+message DispatchMessage {
+    string client = 1;  //用户端唯一标识
+    string invoke = 2;  //接口hash值
+    bytes data = 3;
+}
