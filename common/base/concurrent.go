@@ -5,7 +5,7 @@ AtomicBoolean
 ConcurrentMap
 */
 
-package tao
+package base
 
 import (
 	"fmt"

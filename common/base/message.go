@@ -1,4 +1,4 @@
-package tao
+package base
 
 import (
 	"bytes"
@@ -7,8 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net"
-
-	"encoding/json"
+	"reflect"
 
 	"github.com/leesper/holmes"
 )
@@ -48,7 +47,11 @@ var (
 )
 
 func init() {
-	messageRegistry = map[int32]handlerUnmarshaler{}
+	messageRegistry = map[int32]handlerUnmarshaler{1: {
+		unmarshaler: _deserializeMessage,
+		handler:     _processMessage,
+	}}
+	fmt.Printf("====>>msg 01：%+v\n", len(messageRegistry))
 	buf = new(bytes.Buffer)
 }
 
@@ -68,8 +71,26 @@ func Register(msgType int32, unmarshaler func([]byte) (Message, error), handler 
 	}
 }
 
-func Register2() { //
+func Register2(srv interface{}) { //
+	tf := reflect.TypeOf(srv)
+	vf := reflect.ValueOf(srv)
+	if tf.NumMethod() == 0 {
 
+	}
+	for i := 0; i < tf.NumMethod(); i++ {
+		fmt.Printf("=====>>001:%+v|%+v\n", tf.Method(i).Name, vf.Method(i))
+		// name := tf.Method(i).Name
+		// msgType := utils.CRC32(name)
+		// if _, ok := messageRegistry[msgType]; ok {
+		// 	panic("duplicate register service:" + tf.Method(i).Name)
+		// }
+		// messageRegistry[msgType] = &handlerUnmarshaler{
+		// 	Method:    vf.Method(i),
+		// 	ParamType: tf.Method(i).Type.In(2),
+		// }
+		// // TODO 利用etcd注册服务，注册地址信息
+		// etcdSer.PutService(fmt.Sprintf(RegisterServiceHandler, name), "heiheihei")
+	}
 }
 
 // GetUnmarshalFunc returns the corresponding unmarshal function for msgType.
@@ -81,9 +102,27 @@ func GetUnmarshalFunc(msgType int32) UnmarshalFunc {
 	return entry.unmarshaler
 }
 
+// GetDefaultUnmarshalFunc returns the corresponding unmarshal function for msgType.
+func GetDefaultUnmarshalFunc() UnmarshalFunc {
+	entry, ok := messageRegistry[1]
+	if !ok {
+		return nil
+	}
+	return entry.unmarshaler
+}
+
 // GetHandlerFunc returns the corresponding handler function for msgType.
 func GetHandlerFunc(msgType int32) HandlerFunc {
 	entry, ok := messageRegistry[msgType]
+	if !ok {
+		return nil
+	}
+	return entry.handler
+}
+
+// GetDefaultHandlerFunc returns the 0 handler function for msgType.
+func GetDefaultHandlerFunc() HandlerFunc {
+	entry, ok := messageRegistry[1]
 	if !ok {
 		return nil
 	}
@@ -101,6 +140,10 @@ type XMessage struct {
 	Client string `json:"client"` //用户端唯一标识
 	Invoke string `json:"invoke"` //接口hash值
 	Data   []byte `json:"data"`   //消息体
+}
+
+type DMessage struct {
+	Content []byte
 }
 
 // HeartBeatMessage for application-level keeping alive.
@@ -190,26 +233,33 @@ func (codec TypeLengthValueCodec) Decode(raw net.Conn) (Message, error) {
 			holmes.Warnln("read type bytes nil")
 			return nil, ErrBadData
 		}
+		fmt.Println("====>>001")
 		typeBuf := bytes.NewReader(typeBytes)
 		var msgType int32
 		if err := binary.Read(typeBuf, binary.LittleEndian, &msgType); err != nil {
 			return nil, err
 		}
+		fmt.Println("====>>002")
 
 		lengthBytes := make([]byte, MessageLenBytes)
 		_, err := io.ReadFull(raw, lengthBytes)
 		if err != nil {
 			return nil, err
 		}
+		fmt.Println("====>>003")
+
 		lengthBuf := bytes.NewReader(lengthBytes)
 		var msgLen uint32
 		if err = binary.Read(lengthBuf, binary.LittleEndian, &msgLen); err != nil {
 			return nil, err
 		}
+		fmt.Println("====>>004")
+
 		if msgLen > MessageMaxBytes {
 			holmes.Errorf("message(type %d) has bytes(%d) beyond max %d\n", msgType, msgLen, MessageMaxBytes)
 			return nil, ErrBadData
 		}
+		fmt.Println("====>>005")
 
 		// read application data
 		msgBytes := make([]byte, msgLen)
@@ -217,9 +267,13 @@ func (codec TypeLengthValueCodec) Decode(raw net.Conn) (Message, error) {
 		if err != nil {
 			return nil, err
 		}
+		fmt.Println("====>>006")
 
 		// deserialize message from bytes
-		unmarshaler := GetUnmarshalFunc(msgType)
+		// unmarshaler := GetUnmarshalFunc(msgType) //TODO msgType==0
+		unmarshaler := GetDefaultUnmarshalFunc()
+		fmt.Printf("====>>007: %+v\n", unmarshaler == nil)
+
 		if unmarshaler == nil {
 			return nil, ErrUndefined(msgType)
 		}
@@ -276,13 +330,40 @@ func (xm XMessage) MessageNumber() int32 {
 }
 
 // MessageNumber returns the message number.
-func (xm XMessage) MessageNumber() int32 {
+func (dm DMessage) MessageNumber() int32 {
 	return 1
 }
 
 // Serialize Serializes Message into bytes.
-func (xm XMessage) Serialize() ([]byte, error) {
-	return json.Marshal(xm)
+func (dm DMessage) Serialize() ([]byte, error) {
+	return []byte(dm.Content), nil
+	// return json.Marshal(dm)
+}
+
+func (dm DMessage) Data() []byte {
+	return dm.Content
+}
+
+func _deserializeMessage(data []byte) (message Message, err error) {
+	if data == nil {
+		return nil, ErrNilData
+	}
+	// content := string(data)
+	msg := DMessage{
+		Content: data,
+	}
+	return msg, nil
+}
+
+func _processMessage(ctx context.Context, conn WriteCloser) {
+	s, ok := ServerFromContext(ctx)
+	if ok {
+		msg := MessageFromContext(ctx)
+		s.Broadcast(msg)
+		data, _ := msg.Serialize()
+		holmes.Infof("ProcessMessage: %+v", string(data))
+	}
+
 }
 
 func Dispatch(handler func(context.Context, WriteCloser)) {

@@ -1,4 +1,4 @@
-package tao
+package base
 
 import (
 	"context"
@@ -610,7 +610,8 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				return
 			}
 			setHeartBeatFunc(time.Now().UnixNano())
-			handler := GetHandlerFunc(msg.MessageNumber())
+			// handler := GetHandlerFunc(msg.MessageNumber()) //TODO msg.MessageNumber()==0
+			handler := GetDefaultHandlerFunc()
 			if handler == nil {
 				if onMessage != nil {
 					holmes.Infof("message %d call onMessage()\n", msg.MessageNumber())

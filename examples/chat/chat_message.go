@@ -9,7 +9,7 @@ import (
 
 const (
 	// ChatMessage is the message number of chat message.
-	ChatMessage int32 = 1
+	ChatMessage int32 = 0
 )
 
 // Message defines the chat message.
