@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	tao "git.ezbuy.me/ezbuy/evarmor/common/base"
+	"git.ezbuy.me/ezbuy/evarmor/examples/chat/server/temp"
 	"github.com/leesper/holmes"
 )
 
@@ -37,8 +38,9 @@ func main() {
 	defer holmes.Start().Stop()
 
 	// tao.Register(chat.ChatMessage, chat.DeserializeMessage, chat.ProcessMessage)
-
-	// tao.Dispatch(chat.ProcessMessage)
+	fmt.Printf("=====>>>201:\n")
+	tao.Register2(new(temp.Chat))
+	fmt.Printf("=====>>>202:\n")
 
 	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", "0.0.0.0", 12345))
 	if err != nil {

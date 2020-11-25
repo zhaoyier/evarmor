@@ -9,6 +9,8 @@ import (
 	"net"
 	"reflect"
 
+	"git.ezbuy.me/ezbuy/evarmor/common/utils"
+	"github.com/golang/protobuf/proto"
 	"github.com/leesper/holmes"
 )
 
@@ -24,6 +26,7 @@ type Handler interface {
 
 // HandlerFunc serves as an adapter to allow the use of ordinary functions as handlers.
 type HandlerFunc func(context.Context, WriteCloser)
+type HandlerFunc2 func(context.Context, proto.Message)
 
 // Handle calls f(ctx, c)
 func (f HandlerFunc) Handle(ctx context.Context, c WriteCloser) {
@@ -72,13 +75,15 @@ func Register(msgType int32, unmarshaler func([]byte) (Message, error), handler 
 }
 
 func Register2(srv interface{}) { //
+	fmt.Printf("====>>500:\n")
 	tf := reflect.TypeOf(srv)
 	vf := reflect.ValueOf(srv)
 	if tf.NumMethod() == 0 {
 
 	}
 	for i := 0; i < tf.NumMethod(); i++ {
-		fmt.Printf("=====>>001:%+v|%+v\n", tf.Method(i).Name, vf.Method(i))
+		hash := utils.GetNameHash(tf.Method(i).Name)
+		fmt.Printf("=====>>505:%+v|%+v|%+v\n", tf.Method(i).Name, vf.Method(i), hash)
 		// name := tf.Method(i).Name
 		// msgType := utils.CRC32(name)
 		// if _, ok := messageRegistry[msgType]; ok {
@@ -366,6 +371,29 @@ func _processMessage(ctx context.Context, conn WriteCloser) {
 
 }
 
-func Dispatch(handler func(context.Context, WriteCloser)) {
+// Register3 dd
+func Register3(services ...interface{}) {
+	tf := reflect.TypeOf(services[0])
+	vf := reflect.ValueOf(services[0])
+	// reflect.TypeOf(c)
+	if tf.NumMethod() == 0 {
 
+	}
+	for i := 0; i < tf.NumMethod(); i++ {
+		fmt.Printf("=====>>001:%+v|%+v\n", tf.Method(i).Name, vf.Method(i))
+		method := tf.Method(i)
+		fmt.Printf("====>>>506: %+v|%+v\n", method, method.Type)
+
+		// name := tf.Method(i).Name
+		// msgType := utils.CRC32(name)
+		// if _, ok := messageRegistry[msgType]; ok {
+		// 	panic("duplicate register service:" + tf.Method(i).Name)
+		// }
+		// messageRegistry[msgType] = &handlerUnmarshaler{
+		// 	Method:    vf.Method(i),
+		// 	ParamType: tf.Method(i).Type.In(2),
+		// }
+		// // TODO 利用etcd注册服务，注册地址信息
+		// etcdSer.PutService(fmt.Sprintf(RegisterServiceHandler, name), "heiheihei")
+	}
 }
