@@ -371,10 +371,6 @@ func NetIDFromContext(ctx context.Context) int64 {
 	return ctx.Value(netIDCtx).(int64)
 }
 
-func (xm XMessage) MessageNumber() int32 {
-	return 1
-}
-
 // MessageNumber returns the message number.
 func (dm DMessage) MessageNumber() int32 {
 	return 1
@@ -410,8 +406,9 @@ func _processMessage(ctx context.Context, conn WriteCloser) {
 		xm := &XMessage{}
 		json.Unmarshal(data, xm)
 		holmes.Infof("ProcessMessage: %+v|%+v", xm, string(xm.Data))
-		if _, ok := messageRegistry2[xm.Invoke]; ok {
+		if val, ok := messageRegistry2[xm.Invoke]; ok {
 			log.Infof("find message registry 2")
+			_invokeFunc(val, xm)
 		}
 	}
 }
@@ -432,4 +429,16 @@ func GetServiceName(s interface{}) string {
 		t = t.Elem()
 	}
 	return path.Base(t.PkgPath())
+}
+
+func _invokeFunc(method handlerUnmarshaler2, xm *XMessage) {
+	req := reflect.New(method.ParamType.Elem()).Interface().(proto.Message)
+	if err := proto.Unmarshal(xm.Data, req); err != nil {
+		log.Errorf("proto unmarshal failed: %+v", err)
+		return
+	}
+
+	ctx := context.Background()
+	results := method.Method.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(req)})
+	log.Infof("method call result: %+v", len(results))
 }

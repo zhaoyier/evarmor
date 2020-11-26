@@ -9,6 +9,8 @@ import (
 
 	tao "git.ezbuy.me/ezbuy/evarmor/common/base"
 	"git.ezbuy.me/ezbuy/evarmor/examples/chat"
+	pchat "git.ezbuy.me/ezbuy/evarmor/rpc/proto/chat"
+	"github.com/golang/protobuf/proto"
 	"github.com/leesper/holmes"
 )
 
@@ -58,11 +60,16 @@ func main() {
 			break
 		} else {
 
+			data, _ := proto.Marshal(&pchat.SayHelloReq{
+				Request: talk,
+			})
+
 			xm := &tao.XMessage{
 				Id:     0,
 				Client: "abc",
 				Invoke: "SayHello",
-				Data:   []byte(talk),
+				// Data:   []byte(talk),
+				Data: data,
 			}
 			rawBytes, _ := json.Marshal(xm)
 			msg := chat.Message{
