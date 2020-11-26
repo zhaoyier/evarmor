@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -56,9 +57,18 @@ func main() {
 		if talk == "bye\n" {
 			break
 		} else {
-			msg := chat.Message{
-				Content: talk,
+
+			xm := &tao.XMessage{
+				Id:     0,
+				Client: "abc",
+				Invoke: "SayHello",
+				Data:   []byte(talk),
 			}
+			rawBytes, _ := json.Marshal(xm)
+			msg := chat.Message{
+				Content: rawBytes,
+			}
+
 			if err := conn.Write(msg); err != nil {
 				holmes.Infoln("error", err)
 			}

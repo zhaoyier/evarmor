@@ -39,7 +39,7 @@ func main() {
 
 	// tao.Register(chat.ChatMessage, chat.DeserializeMessage, chat.ProcessMessage)
 	fmt.Printf("=====>>>201:\n")
-	tao.Register2(new(temp.Chat))
+	tao.RegisterService(new(temp.Chat))
 	fmt.Printf("=====>>>202:\n")
 
 	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", "0.0.0.0", 12345))

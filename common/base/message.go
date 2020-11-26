@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
+	"path"
 	"reflect"
 
-	"git.ezbuy.me/ezbuy/evarmor/common/utils"
+	"git.ezbuy.me/ezbuy/evarmor/common/log"
+	// "git.ezbuy.me/ezbuy/base/misc/log"
 	"github.com/golang/protobuf/proto"
 	"github.com/leesper/holmes"
 )
@@ -33,8 +36,14 @@ func (f HandlerFunc) Handle(ctx context.Context, c WriteCloser) {
 	f(ctx, c)
 }
 
+// Handle calls f(ctx, c)
+func (f HandlerFunc2) Handle(ctx context.Context, c proto.Message) {
+	f(ctx, c)
+}
+
 // UnmarshalFunc unmarshals bytes into Message.
 type UnmarshalFunc func([]byte) (Message, error)
+type UnmarshalFunc2 func([]byte) (Message, error)
 
 // handlerUnmarshaler is a combination of unmarshal and handle functions for message.
 type handlerUnmarshaler struct {
@@ -42,11 +51,24 @@ type handlerUnmarshaler struct {
 	unmarshaler UnmarshalFunc
 }
 
+// type handlerUnmarshaler2 struct {
+// 	handler     HandlerFunc2
+// 	unmarshaler UnmarshalFunc
+// }
+
+//handlerUnmarshaler2 service的方法签名满足 func(context.Context, XXXXRequest) Response
+//XXXXRequest 实现 Request interface
+type handlerUnmarshaler2 struct {
+	Method    reflect.Value
+	ParamType reflect.Type //XXXXRequest的实际类型
+}
+
 var (
 	buf *bytes.Buffer
 	// messageRegistry is the registry of all
 	// message-related unmarshal and handle functions.
-	messageRegistry map[int32]handlerUnmarshaler
+	messageRegistry  map[int32]handlerUnmarshaler
+	messageRegistry2 map[string]handlerUnmarshaler2
 )
 
 func init() {
@@ -55,6 +77,7 @@ func init() {
 		handler:     _processMessage,
 	}}
 	fmt.Printf("====>>msg 01：%+v\n", len(messageRegistry))
+	messageRegistry2 = make(map[string]handlerUnmarshaler2)
 	buf = new(bytes.Buffer)
 }
 
@@ -74,28 +97,46 @@ func Register(msgType int32, unmarshaler func([]byte) (Message, error), handler 
 	}
 }
 
-func Register2(srv interface{}) { //
-	fmt.Printf("====>>500:\n")
-	tf := reflect.TypeOf(srv)
-	vf := reflect.ValueOf(srv)
-	if tf.NumMethod() == 0 {
+func RegisterService(srvs ...interface{}) { //
+	// fmt.Printf("====>>500: %+v\n", GetServiceName(srv))
+	// name := GetServiceName(srv)
+	for _, srv := range srvs {
+		log.Infof("%+v\n", GetServiceName(srv))
 
+		refTyp := reflect.TypeOf(srv)
+		refVal := reflect.ValueOf(srv)
+		if refTyp.NumMethod() == 0 {
+			panic("no method found for serivce: " + refTyp.Name())
+		}
+		for m := 0; m < refTyp.NumMethod(); m++ {
+			method := refTyp.Method(m)
+			fmt.Printf("=====>>1000:%+v|%+v\n", method.Name, method.PkgPath)
+			if _, ok := messageRegistry2[method.Name]; ok {
+				panic("duplicate register service:" + method.Name)
+			}
+			messageRegistry2[method.Name] = handlerUnmarshaler2{
+				Method:    refVal.Method(m),
+				ParamType: refTyp.Method(m).Type.In(2),
+			}
+		}
 	}
-	for i := 0; i < tf.NumMethod(); i++ {
-		hash := utils.GetNameHash(tf.Method(i).Name)
-		fmt.Printf("=====>>505:%+v|%+v|%+v\n", tf.Method(i).Name, vf.Method(i), hash)
-		// name := tf.Method(i).Name
-		// msgType := utils.CRC32(name)
-		// if _, ok := messageRegistry[msgType]; ok {
-		// 	panic("duplicate register service:" + tf.Method(i).Name)
-		// }
-		// messageRegistry[msgType] = &handlerUnmarshaler{
-		// 	Method:    vf.Method(i),
-		// 	ParamType: tf.Method(i).Type.In(2),
-		// }
-		// // TODO 利用etcd注册服务，注册地址信息
-		// etcdSer.PutService(fmt.Sprintf(RegisterServiceHandler, name), "heiheihei")
-	}
+
+	// for m := 0; i < tf.NumMethod(); i++ {
+	// 	hash := utils.GetNameHash(tf.Method(i).Name)
+	// 	fmt.Printf("=====>>505:%+v|%+v|%+v\n", tf.Method(i).Name, vf.Method(i), hash)
+	// 	method := tf.Method(i)
+	// 	// name := tf.Method(i).Name
+	// 	// msgType := utils.CRC32(name)
+	// 	// if _, ok := messageRegistry[msgType]; ok {
+	// 	// 	panic("duplicate register service:" + tf.Method(i).Name)
+	// 	// }
+	// 	// messageRegistry[msgType] = &handlerUnmarshaler{
+	// 	// 	Method:    vf.Method(i),
+	// 	// 	ParamType: tf.Method(i).Type.In(2),
+	// 	// }
+	// 	// // TODO 利用etcd注册服务，注册地址信息
+	// 	// etcdSer.PutService(fmt.Sprintf(RegisterServiceHandler, name), "heiheihei")
+	// }
 }
 
 // GetUnmarshalFunc returns the corresponding unmarshal function for msgType.
@@ -361,6 +402,21 @@ func _deserializeMessage(data []byte) (message Message, err error) {
 }
 
 func _processMessage(ctx context.Context, conn WriteCloser) {
+	_, ok := ServerFromContext(ctx)
+	if ok {
+		msg := MessageFromContext(ctx)
+		// s.Broadcast(msg)
+		data, _ := msg.Serialize()
+		xm := &XMessage{}
+		json.Unmarshal(data, xm)
+		holmes.Infof("ProcessMessage: %+v|%+v", xm, string(xm.Data))
+		if _, ok := messageRegistry2[xm.Invoke]; ok {
+			log.Infof("find message registry 2")
+		}
+	}
+}
+
+func _processMessage2(ctx context.Context, conn WriteCloser) {
 	s, ok := ServerFromContext(ctx)
 	if ok {
 		msg := MessageFromContext(ctx)
@@ -368,32 +424,12 @@ func _processMessage(ctx context.Context, conn WriteCloser) {
 		data, _ := msg.Serialize()
 		holmes.Infof("ProcessMessage: %+v", string(data))
 	}
-
 }
 
-// Register3 dd
-func Register3(services ...interface{}) {
-	tf := reflect.TypeOf(services[0])
-	vf := reflect.ValueOf(services[0])
-	// reflect.TypeOf(c)
-	if tf.NumMethod() == 0 {
-
+func GetServiceName(s interface{}) string {
+	t := reflect.TypeOf(s)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
 	}
-	for i := 0; i < tf.NumMethod(); i++ {
-		fmt.Printf("=====>>001:%+v|%+v\n", tf.Method(i).Name, vf.Method(i))
-		method := tf.Method(i)
-		fmt.Printf("====>>>506: %+v|%+v\n", method, method.Type)
-
-		// name := tf.Method(i).Name
-		// msgType := utils.CRC32(name)
-		// if _, ok := messageRegistry[msgType]; ok {
-		// 	panic("duplicate register service:" + tf.Method(i).Name)
-		// }
-		// messageRegistry[msgType] = &handlerUnmarshaler{
-		// 	Method:    vf.Method(i),
-		// 	ParamType: tf.Method(i).Type.In(2),
-		// }
-		// // TODO 利用etcd注册服务，注册地址信息
-		// etcdSer.PutService(fmt.Sprintf(RegisterServiceHandler, name), "heiheihei")
-	}
+	return path.Base(t.PkgPath())
 }

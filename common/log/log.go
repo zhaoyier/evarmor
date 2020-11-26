@@ -37,8 +37,8 @@ func NewEx(depth int) *Entry {
 	}
 	// logger.Formatter = &logrus.JSONFormatter{}
 	logger.Formatter = &logrus.TextFormatter{
-		DisableColors: disableColor,
-		SortingFunc:   sortingLogger,
+		DisableColors: true,
+		FullTimestamp: true,
 	}
 	return &Entry{
 		Entry: logrus.NewEntry(logger),

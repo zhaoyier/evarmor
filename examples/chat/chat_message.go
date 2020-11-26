@@ -14,7 +14,7 @@ const (
 
 // Message defines the chat message.
 type Message struct {
-	Content string
+	Content []byte
 }
 
 // MessageNumber returns the message number.
@@ -24,7 +24,7 @@ func (cm Message) MessageNumber() int32 {
 
 // Serialize Serializes Message into bytes.
 func (cm Message) Serialize() ([]byte, error) {
-	return []byte(cm.Content), nil
+	return cm.Content, nil
 }
 
 // DeserializeMessage deserializes bytes into Message.
@@ -32,9 +32,9 @@ func DeserializeMessage(data []byte) (message tao.Message, err error) {
 	if data == nil {
 		return nil, tao.ErrNilData
 	}
-	content := string(data)
+	// content := string(data)
 	msg := Message{
-		Content: content,
+		Content: data,
 	}
 	return msg, nil
 }
