@@ -13,7 +13,7 @@ type Chat struct {
 }
 
 func (c *Chat) SayHello(ctx context.Context, in *pchat.SayHelloReq) (*pchat.SayHelloResp, error) {
-	log.Infof("SayHello I am here")
+	log.Infof("SayHello I am here: %+v", in.GetRequest())
 	return &pchat.SayHelloResp{
 		Response: "收到",
 	}, nil
