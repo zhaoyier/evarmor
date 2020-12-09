@@ -61,6 +61,7 @@ type handlerUnmarshaler struct {
 type handlerUnmarshaler2 struct {
 	Method    reflect.Value
 	ParamType reflect.Type //XXXXRequest的实际类型
+	OutType   reflect.Type //XXXXRequest的实际类型
 }
 
 var (
@@ -110,13 +111,14 @@ func RegisterService(srvs ...interface{}) { //
 		}
 		for m := 0; m < refTyp.NumMethod(); m++ {
 			method := refTyp.Method(m)
-			fmt.Printf("=====>>1000:%+v|%+v\n", method.Name, method.PkgPath)
+			fmt.Printf("=====>>1000:%+v|%+v|%+v\n", method.Name, method.PkgPath, refTyp.Method(m).Type.Out(0))
 			if _, ok := messageRegistry2[method.Name]; ok {
 				panic("duplicate register service:" + method.Name)
 			}
 			messageRegistry2[method.Name] = handlerUnmarshaler2{
 				Method:    refVal.Method(m),
 				ParamType: refTyp.Method(m).Type.In(2),
+				OutType:   refTyp.Method(m).Type.Out(0),
 			}
 		}
 	}
@@ -398,6 +400,12 @@ func _deserializeMessage(data []byte) (message Message, err error) {
 }
 
 func _processMessage(ctx context.Context, conn WriteCloser) {
+	switch conn.(type) {
+	case *ServerConn:
+		log.Infof("_process message start: %+v", "server")
+	case *ClientConn:
+		log.Infof("_process message start: %+v", "client")
+	}
 	_, ok := ServerFromContext(ctx)
 	if ok {
 		msg := MessageFromContext(ctx)
@@ -406,22 +414,24 @@ func _processMessage(ctx context.Context, conn WriteCloser) {
 		xm := &XMessage{}
 		json.Unmarshal(data, xm)
 		holmes.Infof("ProcessMessage: %+v|%+v", xm, string(xm.Data))
-		if val, ok := messageRegistry2[xm.Invoke]; ok {
+		val, ok := messageRegistry2[xm.Invoke]
+		if ok {
 			log.Infof("find message registry 2")
-			_invokeFunc(val, xm)
+			_dealServiceMessage(val, xm)
 		}
+
 	}
 }
 
-func _processMessage2(ctx context.Context, conn WriteCloser) {
-	s, ok := ServerFromContext(ctx)
-	if ok {
-		msg := MessageFromContext(ctx)
-		s.Broadcast(msg)
-		data, _ := msg.Serialize()
-		holmes.Infof("ProcessMessage: %+v", string(data))
-	}
-}
+// func _processMessage2(ctx context.Context, conn WriteCloser) {
+// 	s, ok := ServerFromContext(ctx)
+// 	if ok {
+// 		msg := MessageFromContext(ctx)
+// 		s.Broadcast(msg)
+// 		data, _ := msg.Serialize()
+// 		holmes.Infof("ProcessMessage: %+v", string(data))
+// 	}
+// }
 
 func GetServiceName(s interface{}) string {
 	t := reflect.TypeOf(s)
@@ -441,4 +451,20 @@ func _invokeFunc(method handlerUnmarshaler2, xm *XMessage) {
 	ctx := context.Background()
 	results := method.Method.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(req)})
 	log.Infof("method call result: %+v", len(results))
+}
+
+func _dealServiceMessage(method handlerUnmarshaler2, xm *XMessage) {
+	req := reflect.New(method.ParamType.Elem()).Interface().(proto.Message)
+	if err := proto.Unmarshal(xm.Data, req); err != nil {
+		log.Errorf("proto unmarshal failed: %+v", err)
+		return
+	}
+
+	ctx := context.Background()
+	results := method.Method.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(req)})
+	log.Infof("method call result: %+v", len(results))
+}
+
+func _dealClientMessage() {
+
 }
