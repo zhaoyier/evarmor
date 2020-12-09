@@ -19,7 +19,8 @@ import (
 
 const (
 	// HeartBeat is the default heart beat message number.
-	HeartBeat = 0
+	HeartBeat        = 0
+	ProxyMessageType = -1
 )
 
 // Handler takes the responsibility to handle incoming messages.
@@ -69,7 +70,7 @@ var (
 	// messageRegistry is the registry of all
 	// message-related unmarshal and handle functions.
 	messageRegistry  map[int32]handlerUnmarshaler
-	messageRegistry2 map[string]handlerUnmarshaler2
+	messageRegistry2 map[string]*handlerUnmarshaler2
 )
 
 func init() {
@@ -78,7 +79,7 @@ func init() {
 		handler:     _processMessage,
 	}}
 	fmt.Printf("====>>msg 01：%+v\n", len(messageRegistry))
-	messageRegistry2 = make(map[string]handlerUnmarshaler2)
+	messageRegistry2 = make(map[string]*handlerUnmarshaler2)
 	buf = new(bytes.Buffer)
 }
 
@@ -98,6 +99,18 @@ func Register(msgType int32, unmarshaler func([]byte) (Message, error), handler 
 	}
 }
 
+func Dispatch(msgType int32, handler func(context.Context, WriteCloser)) {
+	entry, ok := messageRegistry[msgType]
+	if !ok {
+		entry = handlerUnmarshaler{
+			unmarshaler: _deserializeMessage,
+			handler:     HandlerFunc(handler),
+		}
+	}
+	entry.handler = HandlerFunc(handler)
+	messageRegistry[msgType] = entry
+}
+
 func RegisterService(srvs ...interface{}) { //
 	// fmt.Printf("====>>500: %+v\n", GetServiceName(srv))
 	// name := GetServiceName(srv)
@@ -115,7 +128,7 @@ func RegisterService(srvs ...interface{}) { //
 			if _, ok := messageRegistry2[method.Name]; ok {
 				panic("duplicate register service:" + method.Name)
 			}
-			messageRegistry2[method.Name] = handlerUnmarshaler2{
+			messageRegistry2[method.Name] = &handlerUnmarshaler2{
 				Method:    refVal.Method(m),
 				ParamType: refTyp.Method(m).Type.In(2),
 				OutType:   refTyp.Method(m).Type.Out(0),
@@ -184,6 +197,11 @@ func GetDefaultHandlerFunc() HandlerFunc {
 		return nil
 	}
 	return entry.handler
+}
+
+func GetServiceHandler(invoke string) (*handlerUnmarshaler2, bool) {
+	entry, ok := messageRegistry2[invoke]
+	return entry, ok
 }
 
 // Message represents the structured data that can be handled.
@@ -426,21 +444,10 @@ func _processMessage(ctx context.Context, conn WriteCloser) {
 		val, ok := messageRegistry2[xm.Invoke]
 		if ok {
 			log.Infof("find message registry 2")
-			_dealServiceMessage(val, xm)
+			DealServiceMessage(val, xm)
 		}
-
 	}
 }
-
-// func _processMessage2(ctx context.Context, conn WriteCloser) {
-// 	s, ok := ServerFromContext(ctx)
-// 	if ok {
-// 		msg := MessageFromContext(ctx)
-// 		s.Broadcast(msg)
-// 		data, _ := msg.Serialize()
-// 		holmes.Infof("ProcessMessage: %+v", string(data))
-// 	}
-// }
 
 func GetServiceName(s interface{}) string {
 	t := reflect.TypeOf(s)
@@ -462,7 +469,7 @@ func _invokeFunc(method handlerUnmarshaler2, xm *XMessage) {
 	log.Infof("method call result: %+v", len(results))
 }
 
-func _dealServiceMessage(method handlerUnmarshaler2, xm *XMessage) {
+func DealServiceMessage(method *handlerUnmarshaler2, xm *XMessage) {
 	req := reflect.New(method.ParamType.Elem()).Interface().(proto.Message)
 	if err := proto.Unmarshal(xm.Data, req); err != nil {
 		log.Errorf("proto unmarshal failed: %+v", err)
@@ -473,7 +480,6 @@ func _dealServiceMessage(method handlerUnmarshaler2, xm *XMessage) {
 	results := method.Method.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(req)})
 	serviceResp := results[0].Interface().(proto.Message)
 	log.Infof("method call result: %+v|%+v", len(results), serviceResp)
-
 }
 
 func _dealClientMessage() {

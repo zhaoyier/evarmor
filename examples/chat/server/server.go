@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	tao "git.ezbuy.me/ezbuy/evarmor/common/base"
+	"git.ezbuy.me/ezbuy/evarmor/examples/chat/server/proxy"
 	"git.ezbuy.me/ezbuy/evarmor/examples/chat/server/temp"
 	"github.com/leesper/holmes"
 )
@@ -36,9 +37,10 @@ func NewChatServer() *ChatServer {
 
 func main() {
 	defer holmes.Start().Stop()
-
+	// tao.Register(chat.ChatMessage, chat.DeserializeMessage, chat.ProcessMessage)
 	// tao.Register(chat.ChatMessage, chat.DeserializeMessage, chat.ProcessMessage)
 	fmt.Printf("=====>>>201:\n")
+	tao.Dispatch(tao.ProxyMessageType, proxy.ProcessMessage)
 	tao.RegisterService(new(temp.Chat))
 	fmt.Printf("=====>>>202:\n")
 
