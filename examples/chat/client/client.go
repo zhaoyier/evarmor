@@ -17,7 +17,7 @@ import (
 func main() {
 	defer holmes.Start().Stop()
 
-	tao.Register(chat.ChatMessage, chat.DeserializeMessage, nil)
+	// tao.Register(chat.ChatMessage, chat.DeserializeMessage, nil)
 
 	c, err := net.Dial("tcp", "127.0.0.1:12345")
 	if err != nil {
@@ -59,7 +59,6 @@ func main() {
 		if talk == "bye\n" {
 			break
 		} else {
-
 			data, _ := proto.Marshal(&pchat.SayHelloReq{
 				Request: talk,
 			})
@@ -68,11 +67,10 @@ func main() {
 				Id:     0,
 				Client: "abc",
 				Invoke: "SayHello",
-				// Data:   []byte(talk),
-				Data: data,
+				Data:   data,
 			}
 			rawBytes, _ := json.Marshal(xm)
-			msg := chat.Message{
+			msg := tao.DMessage{
 				Content: rawBytes,
 			}
 

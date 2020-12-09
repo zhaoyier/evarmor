@@ -611,7 +611,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 			}
 			setHeartBeatFunc(time.Now().UnixNano())
 			// handler := GetHandlerFunc(msg.MessageNumber()) //TODO msg.MessageNumber()==0
-			handler := GetDefaultHandlerFunc()
+			handler := GetHandlerFunc(msg.MessageNumber())
 			if handler == nil {
 				if onMessage != nil {
 					holmes.Infof("message %d call onMessage()\n", msg.MessageNumber())

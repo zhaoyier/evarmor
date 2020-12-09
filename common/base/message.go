@@ -73,7 +73,7 @@ var (
 )
 
 func init() {
-	messageRegistry = map[int32]handlerUnmarshaler{1: {
+	messageRegistry = map[int32]handlerUnmarshaler{-1: {
 		unmarshaler: _deserializeMessage,
 		handler:     _processMessage,
 	}}
@@ -145,14 +145,19 @@ func RegisterService(srvs ...interface{}) { //
 func GetUnmarshalFunc(msgType int32) UnmarshalFunc {
 	entry, ok := messageRegistry[msgType]
 	if !ok {
-		return nil
+		entry, ok := messageRegistry[-1]
+		if !ok {
+			return nil
+		}
+		return entry.unmarshaler
 	}
+
 	return entry.unmarshaler
 }
 
 // GetDefaultUnmarshalFunc returns the corresponding unmarshal function for msgType.
 func GetDefaultUnmarshalFunc() UnmarshalFunc {
-	entry, ok := messageRegistry[1]
+	entry, ok := messageRegistry[-1]
 	if !ok {
 		return nil
 	}
@@ -163,14 +168,18 @@ func GetDefaultUnmarshalFunc() UnmarshalFunc {
 func GetHandlerFunc(msgType int32) HandlerFunc {
 	entry, ok := messageRegistry[msgType]
 	if !ok {
-		return nil
+		entry, ok := messageRegistry[-1]
+		if !ok {
+			return nil
+		}
+		return entry.handler
 	}
 	return entry.handler
 }
 
 // GetDefaultHandlerFunc returns the 0 handler function for msgType.
 func GetDefaultHandlerFunc() HandlerFunc {
-	entry, ok := messageRegistry[1]
+	entry, ok := messageRegistry[-1]
 	if !ok {
 		return nil
 	}
@@ -318,8 +327,8 @@ func (codec TypeLengthValueCodec) Decode(raw net.Conn) (Message, error) {
 		fmt.Println("====>>006")
 
 		// deserialize message from bytes
-		// unmarshaler := GetUnmarshalFunc(msgType) //TODO msgType==0
-		unmarshaler := GetDefaultUnmarshalFunc()
+		unmarshaler := GetUnmarshalFunc(msgType) //TODO msgType==0
+		// unmarshaler := GetDefaultUnmarshalFunc()
 		fmt.Printf("====>>007: %+v\n", unmarshaler == nil)
 
 		if unmarshaler == nil {
@@ -375,7 +384,7 @@ func NetIDFromContext(ctx context.Context) int64 {
 
 // MessageNumber returns the message number.
 func (dm DMessage) MessageNumber() int32 {
-	return 1
+	return 0
 }
 
 // Serialize Serializes Message into bytes.
@@ -402,9 +411,9 @@ func _deserializeMessage(data []byte) (message Message, err error) {
 func _processMessage(ctx context.Context, conn WriteCloser) {
 	switch conn.(type) {
 	case *ServerConn:
-		log.Infof("_process message start: %+v", "server")
+		log.Infof("_process message start server: %+v", "server")
 	case *ClientConn:
-		log.Infof("_process message start: %+v", "client")
+		log.Infof("_process message start client: %+v", "client")
 	}
 	_, ok := ServerFromContext(ctx)
 	if ok {
@@ -462,7 +471,9 @@ func _dealServiceMessage(method handlerUnmarshaler2, xm *XMessage) {
 
 	ctx := context.Background()
 	results := method.Method.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(req)})
-	log.Infof("method call result: %+v", len(results))
+	serviceResp := results[0].Interface().(proto.Message)
+	log.Infof("method call result: %+v|%+v", len(results), serviceResp)
+
 }
 
 func _dealClientMessage() {
