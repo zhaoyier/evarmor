@@ -2,8 +2,12 @@ package chat
 
 import (
 	"context"
+	"encoding/json"
 
 	tao "git.ezbuy.me/ezbuy/evarmor/common/base"
+	"git.ezbuy.me/ezbuy/evarmor/common/log"
+	pchat "git.ezbuy.me/ezbuy/evarmor/rpc/proto/chat"
+	"github.com/golang/protobuf/proto"
 	"github.com/leesper/holmes"
 )
 
@@ -41,10 +45,22 @@ func DeserializeMessage(data []byte) (message tao.Message, err error) {
 
 // ProcessMessage handles the Message logic.
 func ProcessMessage(ctx context.Context, conn tao.WriteCloser) {
-	holmes.Infof("ProcessMessage")
-	s, ok := tao.ServerFromContext(ctx)
-	if ok {
-		msg := tao.MessageFromContext(ctx)
-		s.Broadcast(msg)
+	holmes.Infof("===>>> ProcessMessage")
+	msg := tao.MessageFromContext(ctx)
+	data, _ := msg.Serialize()
+	xm := &tao.XMessage{}
+	json.Unmarshal(data, xm)
+	log.Infof("ProcessMessage client: %+v|%+v", xm, xm.Data)
+	// var resp *pchat.SayHelloResp
+	in := &pchat.SayHelloResp{}
+	if err := proto.Unmarshal(xm.Data, in); err != nil {
+		log.Errorf("process message unmarshal failed: %q", err)
+		return
 	}
+	log.Infof("process message result: %+v", in.GetResponse())
+	// s, ok := tao.ServerFromContext(ctx)
+	// if ok {
+	// 	msg := tao.MessageFromContext(ctx)
+	// 	s.Broadcast(msg)
+	// }
 }

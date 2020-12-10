@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 
 	tao "git.ezbuy.me/ezbuy/evarmor/common/base"
 	"git.ezbuy.me/ezbuy/evarmor/examples/chat"
@@ -17,7 +18,7 @@ import (
 func main() {
 	defer holmes.Start().Stop()
 
-	// tao.Register(chat.ChatMessage, chat.DeserializeMessage, nil)
+	tao.Register(tao.ProxyMessageType, tao.DeserializeMessage, chat.ProcessMessage)
 
 	c, err := net.Dial("tcp", "127.0.0.1:12345")
 	if err != nil {
@@ -60,7 +61,7 @@ func main() {
 			break
 		} else {
 			data, _ := proto.Marshal(&pchat.SayHelloReq{
-				Request: talk,
+				Request: strings.TrimSpace(talk),
 			})
 
 			xm := &tao.XMessage{

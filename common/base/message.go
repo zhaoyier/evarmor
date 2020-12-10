@@ -52,11 +52,6 @@ type handlerUnmarshaler struct {
 	unmarshaler UnmarshalFunc
 }
 
-// type handlerUnmarshaler2 struct {
-// 	handler     HandlerFunc2
-// 	unmarshaler UnmarshalFunc
-// }
-
 //handlerUnmarshaler2 service的方法签名满足 func(context.Context, XXXXRequest) Response
 //XXXXRequest 实现 Request interface
 type handlerUnmarshaler2 struct {
@@ -74,10 +69,11 @@ var (
 )
 
 func init() {
-	messageRegistry = map[int32]handlerUnmarshaler{-1: {
-		unmarshaler: _deserializeMessage,
-		handler:     _processMessage,
-	}}
+	// messageRegistry = map[int32]handlerUnmarshaler{-1: {
+	// 	unmarshaler: _deserializeMessage,
+	// 	handler:     _processMessage,
+	// }}
+	messageRegistry = make(map[int32]handlerUnmarshaler)
 	fmt.Printf("====>>msg 01：%+v\n", len(messageRegistry))
 	messageRegistry2 = make(map[string]*handlerUnmarshaler2)
 	buf = new(bytes.Buffer)
@@ -402,17 +398,26 @@ func NetIDFromContext(ctx context.Context) int64 {
 
 // MessageNumber returns the message number.
 func (dm DMessage) MessageNumber() int32 {
-	return 0
+	return -1
 }
 
 // Serialize Serializes Message into bytes.
 func (dm DMessage) Serialize() ([]byte, error) {
 	return []byte(dm.Content), nil
-	// return json.Marshal(dm)
 }
 
 func (dm DMessage) Data() []byte {
 	return dm.Content
+}
+
+func DeserializeMessage(data []byte) (message Message, err error) {
+	if data == nil {
+		return nil, ErrNilData
+	}
+	msg := DMessage{
+		Content: data,
+	}
+	return msg, nil
 }
 
 func _deserializeMessage(data []byte) (message Message, err error) {
@@ -469,17 +474,18 @@ func _invokeFunc(method handlerUnmarshaler2, xm *XMessage) {
 	log.Infof("method call result: %+v", len(results))
 }
 
-func DealServiceMessage(method *handlerUnmarshaler2, xm *XMessage) {
+func DealServiceMessage(method *handlerUnmarshaler2, xm *XMessage) ([]byte, error) {
 	req := reflect.New(method.ParamType.Elem()).Interface().(proto.Message)
 	if err := proto.Unmarshal(xm.Data, req); err != nil {
 		log.Errorf("proto unmarshal failed: %+v", err)
-		return
+		return nil, err
 	}
 
 	ctx := context.Background()
 	results := method.Method.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(req)})
 	serviceResp := results[0].Interface().(proto.Message)
 	log.Infof("method call result: %+v|%+v", len(results), serviceResp)
+	return proto.Marshal(serviceResp)
 }
 
 func _dealClientMessage() {
