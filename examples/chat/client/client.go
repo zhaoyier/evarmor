@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -39,7 +38,7 @@ func main() {
 	})
 
 	onMessage := tao.OnMessageOption(func(msg tao.Message, c tao.WriteCloser) {
-		fmt.Print(msg.(chat.Message).Content)
+		// fmt.Print(msg.(chat.Message).Content)
 	})
 
 	options := []tao.ServerOption{
@@ -65,17 +64,17 @@ func main() {
 			})
 
 			xm := &tao.XMessage{
-				Id:     0,
+				Id:     100,
 				Client: "abc",
 				Invoke: "SayHello",
 				Data:   data,
 			}
-			rawBytes, _ := json.Marshal(xm)
-			msg := tao.DMessage{
-				Content: rawBytes,
-			}
+			// rawBytes, _ := json.Marshal(xm)
+			// msg := tao.DMessage{
+			// 	Content: rawBytes,
+			// }
 
-			if err := conn.Write(msg); err != nil {
+			if err := conn.Write(xm); err != nil {
 				holmes.Infoln("error", err)
 			}
 		}

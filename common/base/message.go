@@ -21,6 +21,18 @@ const (
 	// HeartBeat is the default heart beat message number.
 	HeartBeat        = 0
 	ProxyMessageType = -1
+
+	netidBits    uint8 = 8
+	clientBits   uint8 = 8
+	functionBits uint8 = 8
+	dataBits     uint8 = 24
+	messageBits  uint8 = 32
+	clientShift  uint8 = 32
+	invokeShift  uint8 = 24
+	netIDShift   uint8 = 40
+	messageShift uint8 = 48
+	//8+8+8+8+24
+	//数据包长度+连接ID+客户端标识+接口标识+消息体长度
 )
 
 // Handler takes the responsibility to handle incoming messages.
@@ -43,7 +55,7 @@ func (f HandlerFunc2) Handle(ctx context.Context, c proto.Message) {
 }
 
 // UnmarshalFunc unmarshals bytes into Message.
-type UnmarshalFunc func([]byte) (Message, error)
+type UnmarshalFunc func([]byte) (*XMessage, error)
 type UnmarshalFunc2 func([]byte) (Message, error)
 
 // handlerUnmarshaler is a combination of unmarshal and handle functions for message.
@@ -84,7 +96,7 @@ func init() {
 // If no handler function provided, the message will not be handled unless you
 // set a default one by calling SetOnMessageCallback.
 // If Register being called twice on one msgType, it will panics.
-func Register(msgType int32, unmarshaler func([]byte) (Message, error), handler func(context.Context, WriteCloser)) {
+func Register(msgType int32, unmarshaler func([]byte) (*XMessage, error), handler func(context.Context, WriteCloser)) {
 	if _, ok := messageRegistry[msgType]; ok {
 		panic(fmt.Sprintf("trying to register message %d twice", msgType))
 	}
@@ -202,7 +214,7 @@ func GetServiceHandler(invoke string) (*handlerUnmarshaler2, bool) {
 
 // Message represents the structured data that can be handled.
 type Message interface {
-	MessageNumber() int32
+	MessageNumber() int64
 	Serialize() ([]byte, error)
 }
 
@@ -213,9 +225,9 @@ type XMessage struct {
 	Data   []byte `json:"data"`   //消息体
 }
 
-type DMessage struct {
-	Content []byte
-}
+// type DMessage struct {
+// 	Content []byte
+// }
 
 // HeartBeatMessage for application-level keeping alive.
 type HeartBeatMessage struct {
@@ -248,27 +260,28 @@ func DeserializeHeartBeat(data []byte) (message Message, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return HeartBeatMessage{
-		Timestamp: timestamp,
-	}, nil
+	// return HeartBeatMessage{
+	// 	Timestamp: timestamp,
+	// }, nil
+	return nil, nil
 }
 
 // HandleHeartBeat updates connection heart beat timestamp.
 func HandleHeartBeat(ctx context.Context, c WriteCloser) {
-	msg := MessageFromContext(ctx)
-	switch c := c.(type) {
-	case *ServerConn:
-		c.SetHeartBeat(msg.(HeartBeatMessage).Timestamp)
-	case *ClientConn:
-		c.SetHeartBeat(msg.(HeartBeatMessage).Timestamp)
-	}
+	// msg := MessageFromContext(ctx)
+	// switch c := c.(type) {
+	// case *ServerConn:
+	// 	c.SetHeartBeat(msg.(HeartBeatMessage).Timestamp)
+	// case *ClientConn:
+	// 	c.SetHeartBeat(msg.(HeartBeatMessage).Timestamp)
+	// }
 }
 
 // Codec is the interface for message coder and decoder.
 // Application programmer can define a custom codec themselves.
 type Codec interface {
-	Decode(net.Conn) (Message, error)
-	Encode(Message) ([]byte, error)
+	Decode(net.Conn) (*XMessage, error)
+	Encode(*XMessage) ([]byte, error)
 }
 
 // TypeLengthValueCodec defines a special codec.
@@ -276,13 +289,91 @@ type Codec interface {
 type TypeLengthValueCodec struct{}
 
 // Decode decodes the bytes data into Message
-func (codec TypeLengthValueCodec) Decode(raw net.Conn) (Message, error) {
+// func (codec TypeLengthValueCodec) Decode2(raw net.Conn) (Message, error) {
+// 	byteChan := make(chan []byte)
+// 	errorChan := make(chan error)
+
+// 	go func(bc chan []byte, ec chan error) {
+// 		typeData := make([]byte, MessageTypeBytes)
+// 		_, err := io.ReadFull(raw, typeData)
+// 		if err != nil {
+// 			ec <- err
+// 			close(bc)
+// 			close(ec)
+// 			holmes.Debugln("go-routine read message type exited")
+// 			return
+// 		}
+// 		bc <- typeData
+// 	}(byteChan, errorChan)
+
+// 	var typeBytes []byte
+
+// 	select {
+// 	case err := <-errorChan:
+// 		return nil, err
+
+// 	case typeBytes = <-byteChan:
+// 		if typeBytes == nil {
+// 			holmes.Warnln("read type bytes nil")
+// 			return nil, ErrBadData
+// 		}
+// 		fmt.Println("====>>001")
+// 		typeBuf := bytes.NewReader(typeBytes)
+// 		var msgType int32
+// 		if err := binary.Read(typeBuf, binary.LittleEndian, &msgType); err != nil {
+// 			return nil, err
+// 		}
+// 		fmt.Println("====>>002")
+
+// 		lengthBytes := make([]byte, MessageLenBytes)
+// 		_, err := io.ReadFull(raw, lengthBytes)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		fmt.Println("====>>003")
+
+// 		lengthBuf := bytes.NewReader(lengthBytes)
+// 		var msgLen uint32
+// 		if err = binary.Read(lengthBuf, binary.LittleEndian, &msgLen); err != nil {
+// 			return nil, err
+// 		}
+// 		fmt.Println("====>>004")
+
+// 		if msgLen > MessageMaxBytes {
+// 			holmes.Errorf("message(type %d) has bytes(%d) beyond max %d\n", msgType, msgLen, MessageMaxBytes)
+// 			return nil, ErrBadData
+// 		}
+// 		fmt.Println("====>>005")
+
+// 		// read application data
+// 		msgBytes := make([]byte, msgLen)
+// 		_, err = io.ReadFull(raw, msgBytes)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		fmt.Println("====>>006")
+
+// 		// deserialize message from bytes
+// 		unmarshaler := GetUnmarshalFunc(msgType) //TODO msgType==0
+// 		// unmarshaler := GetDefaultUnmarshalFunc()
+// 		fmt.Printf("====>>007: %+v\n", unmarshaler == nil)
+
+// 		if unmarshaler == nil {
+// 			return nil, ErrUndefined(msgType)
+// 		}
+// 		// return unmarshaler(msgBytes)
+// 		return nil, nil
+// 	}
+// }
+
+// Decode decodes the bytes data into Message
+func (codec TypeLengthValueCodec) Decode(raw net.Conn) (*XMessage, error) {
 	byteChan := make(chan []byte)
 	errorChan := make(chan error)
 
 	go func(bc chan []byte, ec chan error) {
-		typeData := make([]byte, MessageTypeBytes)
-		_, err := io.ReadFull(raw, typeData)
+		infoData := make([]byte, MessageInfoBytes)
+		_, err := io.ReadFull(raw, infoData)
 		if err != nil {
 			ec <- err
 			close(bc)
@@ -290,76 +381,81 @@ func (codec TypeLengthValueCodec) Decode(raw net.Conn) (Message, error) {
 			holmes.Debugln("go-routine read message type exited")
 			return
 		}
-		bc <- typeData
+		bc <- infoData
 	}(byteChan, errorChan)
 
-	var typeBytes []byte
+	var msgBytes []byte
 
 	select {
 	case err := <-errorChan:
 		return nil, err
 
-	case typeBytes = <-byteChan:
-		if typeBytes == nil {
+	case msgBytes = <-byteChan:
+		if msgBytes == nil {
 			holmes.Warnln("read type bytes nil")
 			return nil, ErrBadData
 		}
 		fmt.Println("====>>001")
-		typeBuf := bytes.NewReader(typeBytes)
-		var msgType int32
-		if err := binary.Read(typeBuf, binary.LittleEndian, &msgType); err != nil {
+		typeBuf := bytes.NewReader(msgBytes)
+		var msgLen int32
+		if err := binary.Read(typeBuf, binary.LittleEndian, &msgLen); err != nil {
 			return nil, err
 		}
-		fmt.Println("====>>002")
+		fmt.Println("====>>002: ", msgLen)
+		//8+/8+8+8/+8+24=56+8
+		//数据包长度+连接ID+客户端标识+接口标识+消息体长度
+		// var len int64
+		// 数据包长度
+		// 00110000
 
-		lengthBytes := make([]byte, MessageLenBytes)
-		_, err := io.ReadFull(raw, lengthBytes)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Println("====>>003")
-
-		lengthBuf := bytes.NewReader(lengthBytes)
-		var msgLen uint32
-		if err = binary.Read(lengthBuf, binary.LittleEndian, &msgLen); err != nil {
-			return nil, err
-		}
-		fmt.Println("====>>004")
-
-		if msgLen > MessageMaxBytes {
-			holmes.Errorf("message(type %d) has bytes(%d) beyond max %d\n", msgType, msgLen, MessageMaxBytes)
-			return nil, ErrBadData
-		}
-		fmt.Println("====>>005")
+		// messageLen := (msgType >> messageShift)
+		// netidLen := msgType >> 40 & 0x0F
+		// clientLen := (msgType >> 32) & 0x0F
+		// invokeLen := (msgType >> 24) & 0x0F
+		// dataLen := msgType & 0xFFFFFF
 
 		// read application data
 		msgBytes := make([]byte, msgLen)
-		_, err = io.ReadFull(raw, msgBytes)
+		_, err := io.ReadFull(raw, msgBytes)
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("====>>006")
+		fmt.Println("====>>003: ", msgBytes)
+		// xm := &XMessage{}
+		// if err := json.Unmarshal(msgBytes, xm); err != nil {
+
+		// }
+		// log.Infof("====>>006:%+v|%+v|%+v|%+v|%+v|%+v|%+v", msgType, messageLen, netidLen, clientLen, invokeLen, dataLen, msgBytes)
+		// xm := &XMessage{
+		// 	Id:     msgBytes[0:netidLen],
+		// 	Client: msgBytes[netidLen : netidLen+clientLen],
+		// 	Invoke: msgBytes[netidLen+clientLen : netidLen+clientLen+invokeLen],
+		// 	Data:   msgBytes[netidLen+clientLen+invokeLen : netidLen+clientLen+invokeLen+dataLen],
+		// }
 
 		// deserialize message from bytes
-		unmarshaler := GetUnmarshalFunc(msgType) //TODO msgType==0
+		unmarshaler := GetUnmarshalFunc(0) //TODO msgType==0
 		// unmarshaler := GetDefaultUnmarshalFunc()
 		fmt.Printf("====>>007: %+v\n", unmarshaler == nil)
 
 		if unmarshaler == nil {
-			return nil, ErrUndefined(msgType)
+			return nil, ErrUndefined(msgLen)
 		}
+
+		// return xm, nil
 		return unmarshaler(msgBytes)
 	}
 }
 
 // Encode encodes the message into bytes data.
-func (codec TypeLengthValueCodec) Encode(msg Message) ([]byte, error) {
-	data, err := msg.Serialize()
+func (codec TypeLengthValueCodec) Encode(msg *XMessage) ([]byte, error) {
+	// data, err := msg.Serialize()
+	data, err := json.Marshal(msg)
 	if err != nil {
 		return nil, err
 	}
 	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.LittleEndian, msg.MessageNumber())
+	log.Infof("====>>encode: %+v|%+v|%+v", len(data), data, msg)
 	binary.Write(buf, binary.LittleEndian, int32(len(data)))
 	buf.Write(data)
 	packet := buf.Bytes()
@@ -397,38 +493,62 @@ func NetIDFromContext(ctx context.Context) int64 {
 }
 
 // MessageNumber returns the message number.
-func (dm DMessage) MessageNumber() int32 {
-	return -1
+// func (dm DMessage) MessageNumber() int32 {
+// 	return -1
+// }
+
+func (xm XMessage) MessageNumber() int64 {
+	//8+8+8+8+24=56
+	//连接ID+客户端标识+接口标识+消息体长度
+	// 8+8+8+24+24
+	// 8
+	// messageBits := len(xm.Id) + len(xm.Client) + len(xm.Invoke) + len(xm.Data)
+	// len(xm.Id)<<48 | len(xm.Client)<<40 | len(xm.Invoke)<<32 | len(xm.Data)
+
+	// messageLen := len()
+	// log.Infof("====>>101:%+v|%+v|%+v|%+v|%+v|%+v\n", messageLen, len(xm.Id), len(xm.Client), len(xm.Invoke), len(xm.Data), fmt.Sprintf("%d", len(xm.Id)+len(xm.Client)+len(xm.Invoke)+len(xm.Data)))
+	// // return int64(messageLen<<messageShift | len(xm.Id)<<netIDShift | len(xm.Client)<<clientShift | len(xm.Invoke)<<invokeShift | len(xm.Data))
+	data, err := json.Marshal(&xm)
+	if err != nil {
+		return 0
+	}
+	return int64(len(data))
+}
+
+func (xm XMessage) Serialize() ([]byte, error) {
+	return nil, nil
 }
 
 // Serialize Serializes Message into bytes.
-func (dm DMessage) Serialize() ([]byte, error) {
-	return []byte(dm.Content), nil
+// func (dm DMessage) Serialize() ([]byte, error) {
+// 	return []byte(dm.Content), nil
+// }
+
+// func (dm DMessage) Data() []byte {
+// 	return dm.Content
+// }
+
+func DeserializeMessage(msgBytes []byte) (message *XMessage, err error) {
+	xm := &XMessage{}
+	log.Infof("=====>>>401:%+v\n", msgBytes)
+	if err := json.Unmarshal(msgBytes, xm); err != nil {
+		return nil, err
+	}
+	log.Infof("=====>>>402:%+v\n", xm)
+
+	return xm, nil
 }
 
-func (dm DMessage) Data() []byte {
-	return dm.Content
-}
+func _deserializeMessage(msgBytes []byte) (message *XMessage, err error) {
+	xm := &XMessage{}
+	log.Infof("=====>>>403:%+v\n", msgBytes)
 
-func DeserializeMessage(data []byte) (message Message, err error) {
-	if data == nil {
-		return nil, ErrNilData
+	if err := json.Unmarshal(msgBytes, xm); err != nil {
+		return nil, err
 	}
-	msg := DMessage{
-		Content: data,
-	}
-	return msg, nil
-}
+	log.Infof("=====>>>404:%+v\n", xm)
 
-func _deserializeMessage(data []byte) (message Message, err error) {
-	if data == nil {
-		return nil, ErrNilData
-	}
-	// content := string(data)
-	msg := DMessage{
-		Content: data,
-	}
-	return msg, nil
+	return xm, nil
 }
 
 func _processMessage(ctx context.Context, conn WriteCloser) {
@@ -442,11 +562,12 @@ func _processMessage(ctx context.Context, conn WriteCloser) {
 	if ok {
 		msg := MessageFromContext(ctx)
 		// s.Broadcast(msg)
+		log.Infof("======>>998:%+v\n", msg.(XMessage))
 		data, _ := msg.Serialize()
 		xm := &XMessage{}
 		json.Unmarshal(data, xm)
-		holmes.Infof("ProcessMessage: %+v|%+v", xm, string(xm.Data))
-		val, ok := messageRegistry2[xm.Invoke]
+		holmes.Infof("ProcessMessage 01: %+v|%+v", xm, string(xm.Data))
+		val, ok := messageRegistry2[string(xm.Invoke)]
 		if ok {
 			log.Infof("find message registry 2")
 			DealServiceMessage(val, xm)

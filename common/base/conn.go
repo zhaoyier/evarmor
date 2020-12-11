@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"git.ezbuy.me/ezbuy/evarmor/common/log"
 	"github.com/leesper/holmes"
 )
 
@@ -17,6 +18,8 @@ const (
 	MessageLenBytes = 4
 	// MessageMaxBytes is the maximum bytes allowed for application data.
 	MessageMaxBytes = 1 << 23 // 8M
+	// MessageInfoBytes dd
+	MessageInfoBytes = 4
 )
 
 // MessageHandler is a combination of message and its handler function.
@@ -27,7 +30,7 @@ type MessageHandler struct {
 
 // WriteCloser is the interface that groups Write and Close methods.
 type WriteCloser interface {
-	Write(Message) error
+	Write(*XMessage) error
 	Close()
 }
 
@@ -202,7 +205,8 @@ func (sc *ServerConn) AddPendingTimer(timerID int64) {
 }
 
 // Write writes a message to the client.
-func (sc *ServerConn) Write(message Message) error {
+func (sc *ServerConn) Write(message *XMessage) error {
+	log.Infof("=====>>771:%+v", message)
 	return asyncWrite(sc, message)
 }
 
@@ -441,7 +445,7 @@ func (cc *ClientConn) reconnect() {
 }
 
 // Write writes a message to the client.
-func (cc *ClientConn) Write(message Message) error {
+func (cc *ClientConn) Write(message *XMessage) error {
 	return asyncWrite(cc, message)
 }
 
@@ -512,7 +516,7 @@ func runEvery(ctx context.Context, netID int64, timing *TimingWheel, d time.Dura
 	return timing.AddTimer(delay, d, timeout)
 }
 
-func asyncWrite(c interface{}, m Message) (err error) {
+func asyncWrite(c interface{}, m *XMessage) (err error) {
 	defer func() {
 		if p := recover(); p != nil {
 			err = ErrServerClosed
@@ -525,6 +529,7 @@ func asyncWrite(c interface{}, m Message) (err error) {
 	)
 	switch c := c.(type) {
 	case *ServerConn:
+		log.Infof("=====>>770:%+v", m)
 		pkt, err = c.belong.opts.codec.Encode(m)
 		sendCh = c.sendCh
 
@@ -611,7 +616,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 			}
 			setHeartBeatFunc(time.Now().UnixNano())
 			// handler := GetHandlerFunc(msg.MessageNumber()) //TODO msg.MessageNumber()==0
-			handler := GetHandlerFunc(msg.MessageNumber())
+			handler := GetHandlerFunc(0)
 			if handler == nil {
 				if onMessage != nil {
 					holmes.Infof("message %d call onMessage()\n", msg.MessageNumber())

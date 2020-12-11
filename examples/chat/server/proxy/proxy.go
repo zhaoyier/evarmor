@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"context"
-	"encoding/json"
 
 	tao "git.ezbuy.me/ezbuy/evarmor/common/base"
 	"git.ezbuy.me/ezbuy/evarmor/common/log"
@@ -18,32 +17,39 @@ func ProcessMessage(ctx context.Context, conn tao.WriteCloser) {
 		netId := tao.NetIDFromContext(ctx)
 		s, ok := tao.ServerFromContext(ctx)
 		if ok {
-			msg := tao.MessageFromContext(ctx)
-			data, _ := msg.Serialize()
-			xm := &tao.XMessage{}
-			json.Unmarshal(data, xm)
-			holmes.Infof("ProcessMessage: %+v|%+v", xm, string(xm.Data))
-			val, ok := tao.GetServiceHandler(xm.Invoke)
+			xm := tao.MessageFromContext(ctx).(*tao.XMessage)
+			log.Infof("======>>998:%+v\n", xm)
+			// data, _ := msg.Serialize()
+			// xm := &tao.XMessage{}
+			// json.Unmarshal(data, xm)
+			// holmes.Infof("ProcessMessage 02: %+v|%+v", xm, string(xm.Data))
+			val, ok := tao.GetServiceHandler(string(xm.Invoke))
 			if ok {
 				log.Infof("find message registry 2")
-				resp, err := tao.DealServiceMessage(val, xm)
+				var err error
+				xm.Data, err = tao.DealServiceMessage(val, xm)
 				if err != nil {
-					log.Errorf("deal server message failed: %+v", resp)
+					log.Errorf("deal server message failed: %+v", xm.Data)
 				}
-				log.Infof("process message response: %+v", resp)
-				rd, _ := json.Marshal(&tao.XMessage{
-					Invoke: "SayHello",
-					Data:   resp,
-				})
-				s.Unicast(netId, tao.DMessage{Content: rd})
+				log.Infof("process message response: %+v", xm)
+				// rd, _ := json.Marshal(&tao.XMessage{
+				// 	I,
+				// 	Invoke: xm.Invoke,
+				// 	Data:   resp,
+				// })
+				// xm.Data = resp
+				// rd, _ := json.Marshal(xm)
+				// log.Infof("=====>>775:%+v|%+v", xm, rd)
+
+				s.Unicast(netId, xm)
 			}
 		}
 	case *tao.ClientConn:
 		log.Infof("_process message start proxy client: %+v", "client")
-		msg := tao.MessageFromContext(ctx)
-		data, _ := msg.Serialize()
-		xm := &tao.XMessage{}
-		json.Unmarshal(data, xm)
+		xm := tao.MessageFromContext(ctx).(*tao.XMessage)
+		// data, _ := msg.Serialize()
+		// xm := &tao.XMessage{}
+		// json.Unmarshal(data, xm)
 		holmes.Infof("ProcessMessage client: %+v|%+v", xm, string(xm.Data))
 		// proto.Unmarshal()
 	}

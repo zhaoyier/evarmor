@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"git.ezbuy.me/ezbuy/evarmor/common/log"
 	"github.com/leesper/holmes"
 )
 
@@ -173,7 +174,7 @@ func (s *Server) Sched(dur time.Duration, sched func(time.Time, WriteCloser)) {
 }
 
 // Broadcast broadcasts message to all server connections managed.
-func (s *Server) Broadcast(msg Message) {
+func (s *Server) Broadcast(msg *XMessage) {
 	s.conns.Range(func(k, v interface{}) bool {
 		c := v.(*ServerConn)
 		if err := c.Write(msg); err != nil {
@@ -185,7 +186,9 @@ func (s *Server) Broadcast(msg Message) {
 }
 
 // Unicast unicasts message to a specified conn.
-func (s *Server) Unicast(id int64, msg Message) error {
+func (s *Server) Unicast(id int64, msg *XMessage) error {
+	log.Infof("=====>>772:%+v", msg)
+
 	v, ok := s.conns.Load(id)
 	if ok {
 		return v.(*ServerConn).Write(msg)

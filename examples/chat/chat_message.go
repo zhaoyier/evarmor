@@ -32,13 +32,13 @@ func (cm Message) Serialize() ([]byte, error) {
 }
 
 // DeserializeMessage deserializes bytes into Message.
-func DeserializeMessage(data []byte) (message tao.Message, err error) {
+func DeserializeMessage(data []byte) (message *tao.XMessage, err error) {
 	if data == nil {
 		return nil, tao.ErrNilData
 	}
 	// content := string(data)
-	msg := Message{
-		Content: data,
+	msg := &tao.XMessage{
+		// Content: data,
 	}
 	return msg, nil
 }
