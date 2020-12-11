@@ -2,7 +2,6 @@ package chat
 
 import (
 	"context"
-	"encoding/json"
 
 	tao "git.ezbuy.me/ezbuy/evarmor/common/base"
 	"git.ezbuy.me/ezbuy/evarmor/common/log"
@@ -28,6 +27,7 @@ func (cm Message) MessageNumber() int32 {
 
 // Serialize Serializes Message into bytes.
 func (cm Message) Serialize() ([]byte, error) {
+	log.Infof("====>>721:%+v", cm)
 	return cm.Content, nil
 }
 
@@ -46,11 +46,11 @@ func DeserializeMessage(data []byte) (message *tao.XMessage, err error) {
 // ProcessMessage handles the Message logic.
 func ProcessMessage(ctx context.Context, conn tao.WriteCloser) {
 	holmes.Infof("===>>> ProcessMessage")
-	msg := tao.MessageFromContext(ctx)
-	data, _ := msg.Serialize()
-	xm := &tao.XMessage{}
-	json.Unmarshal(data, xm)
-	log.Infof("ProcessMessage client: %+v|%+v", xm, xm.Data)
+	xm := tao.MessageFromContext(ctx).(*tao.XMessage)
+	// data, _ := msg.Serialize()
+	// xm := &tao.XMessage{}
+	// json.Unmarshal(data, xm)
+	log.Infof("ProcessMessage client 003: %+v|%+v", xm, xm.Data)
 	// var resp *pchat.SayHelloResp
 	in := &pchat.SayHelloResp{}
 	if err := proto.Unmarshal(xm.Data, in); err != nil {

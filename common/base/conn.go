@@ -626,6 +626,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				}
 				continue
 			}
+			log.Infof("====>>>710:%+v|%+v", msg, handler)
 			handlerCh <- MessageHandler{msg, handler}
 		}
 	}

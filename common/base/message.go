@@ -449,7 +449,6 @@ func (codec TypeLengthValueCodec) Decode(raw net.Conn) (*XMessage, error) {
 
 // Encode encodes the message into bytes data.
 func (codec TypeLengthValueCodec) Encode(msg *XMessage) ([]byte, error) {
-	// data, err := msg.Serialize()
 	data, err := json.Marshal(msg)
 	if err != nil {
 		return nil, err
@@ -516,6 +515,7 @@ func (xm XMessage) MessageNumber() int64 {
 }
 
 func (xm XMessage) Serialize() ([]byte, error) {
+	log.Infof("=====>>720:%+v", xm)
 	return nil, nil
 }
 

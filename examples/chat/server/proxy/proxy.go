@@ -46,11 +46,12 @@ func ProcessMessage(ctx context.Context, conn tao.WriteCloser) {
 		}
 	case *tao.ClientConn:
 		log.Infof("_process message start proxy client: %+v", "client")
+		msg := tao.MessageFromContext(ctx)
 		xm := tao.MessageFromContext(ctx).(*tao.XMessage)
 		// data, _ := msg.Serialize()
 		// xm := &tao.XMessage{}
 		// json.Unmarshal(data, xm)
-		holmes.Infof("ProcessMessage client: %+v|%+v", xm, string(xm.Data))
+		holmes.Infof("ProcessMessage client 002: %+v|%+v|%+v", xm, string(xm.Data), msg)
 		// proto.Unmarshal()
 	}
 
